@@ -394,9 +394,15 @@
             if (icon) icon.className = "bi bi-check-lg";
         };
 
+        /**
+ * SISTEMA INTEGRADO - Gestión de Mensajería
+ */
+
         window.sendMessage = async () => {
             const input = document.getElementById("chatInput");
             const text = input?.value.trim();
+
+            // Validación básica: no enviar si está vacío
             if (!text) return;
 
             const formData = new FormData();
@@ -404,24 +410,76 @@
             formData.append("user", getActiveUser());
 
             let url = '/Chat/SaveMessage';
-            const previewVisible = document.getElementById("replyPreview")?.style.display === "block";
+            const previewEl = document.getElementById("replyPreview");
+            const previewVisible = previewEl && previewEl.style.display === "block";
 
+            // Lógica de decisión de URL y Parámetros
             if (editingMsgId && previewVisible) {
+                // MODO EDICIÓN
                 url = '/Chat/UpdateMessage';
                 formData.append("editId", editingMsgId);
             } else if (replyToId && previewVisible) {
+                // MODO RESPUESTA
                 formData.append("replyToId", replyToId);
+                formData.append("replyToUser", document.getElementById("replyUser").innerText);
+                formData.append("replyToText", document.getElementById("replyText").innerText);
+            } else {
+                // MODO MENSAJE NUEVO (Limpieza explícita para el Backend)
+                formData.append("replyToId", "");
+                formData.append("replyToUser", "");
+                formData.append("replyToText", "");
             }
 
             try {
                 const res = await fetch(url, { method: 'POST', body: formData });
                 const data = await res.json();
+
                 if (data.success) {
+                    // CRÍTICO: Limpiar el estado global inmediatamente para evitar bucles
+                    editingMsgId = null;
+                    replyToId = null;
+
+                    // Resetear la interfaz (oculta preview, limpia input y cambia icono)
                     window.cancelReply();
-                    // No hace falta llamar a loadChatHistory() aquí, 
-                    // SignalR disparará la actualización para todos, incluido vos.
+                } else {
+                    console.error("Error del servidor:", data.message);
                 }
-            } catch (err) { console.error("Error al enviar:", err); }
+            } catch (err) {
+                console.error("Error en la petición fetch:", err);
+            }
+        };
+
+        /**
+         * Función Robusta para cancelar estados de edición/respuesta
+         */
+        window.cancelReply = () => {
+            // 1. Resetear variables de estado
+            replyToId = null;
+            editingMsgId = null;
+
+            // 2. Limpiar Interfaz Visual
+            const preview = document.getElementById("replyPreview");
+            if (preview) {
+                preview.style.display = "none";
+                // Limpiamos los textos internos por prolijidad
+                const replyUser = document.getElementById("replyUser");
+                const replyText = document.getElementById("replyText");
+                if (replyUser) replyUser.innerText = "";
+                if (replyText) replyText.innerText = "";
+            }
+
+            // 3. Resetear el Input
+            const input = document.getElementById("chatInput");
+            if (input) {
+                input.value = "";
+                input.focus(); // Devolver el foco al input para seguir escribiendo
+            }
+
+            // 4. Resetear el Icono del botón (volver a la flecha de enviar)
+            const icon = document.getElementById("sendIcon");
+            if (icon) {
+                icon.className = "bi bi-send-fill";
+            }
         };
 
         window.deleteMessage = async (id) => {

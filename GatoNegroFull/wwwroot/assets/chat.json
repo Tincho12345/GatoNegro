@@ -2,21 +2,61 @@
   {
     "Id": "2571f6d2-575d-46ef-ab62-c97c2d5352cb",
     "User": "Claudia Galeano",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1777733619/perfiles_gato_negro/WhatsApp_Image_2026-04-25_at_3.33.21_PM_fdbmxq.jpg",
     "Text": "hola soy Claudia",
     "Date": "2026-05-02T11:49:07.209113-03:00",
     "ReplyToId": null,
     "ReplyToUser": null,
-    "ReplyToText": null,
-    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1777733619/perfiles_gato_negro/WhatsApp_Image_2026-04-25_at_3.33.21_PM_fdbmxq.jpg"
+    "ReplyToText": null
   },
   {
     "Id": "eadb4b56-d205-4465-88c1-5015413607ac",
     "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
     "Text": "hola claudia",
     "Date": "2026-05-02T11:49:30.526945-03:00",
     "ReplyToId": null,
     "ReplyToUser": null,
-    "ReplyToText": null,
-    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg"
+    "ReplyToText": null
+  },
+  {
+    "Id": "e2a6a876-bcb0-4a84-85ca-47a81c599ef2",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "HOLA",
+    "Date": "2026-05-07T13:27:00.3156485-03:00",
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null
+  },
+  {
+    "Id": "9100497f-f957-4f82-aaec-255a1d31bc10",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "hola respuestasss",
+    "Date": "2026-05-07T13:38:26.9986971-03:00",
+    "ReplyToId": "2571f6d2-575d-46ef-ab62-c97c2d5352cb",
+    "ReplyToUser": "Claudia Galeano",
+    "ReplyToText": "hola soy Claudia"
+  },
+  {
+    "Id": "79975f64-1e35-4cf8-91b4-29434b84dc86",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "que funcione",
+    "Date": "2026-05-07T13:38:39.4083889-03:00",
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null
+  },
+  {
+    "Id": "f2413b6d-504a-4cfd-b9e7-f75cac3320e9",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "segunda respuesta",
+    "Date": "2026-05-07T13:38:50.6130484-03:00",
+    "ReplyToId": "2571f6d2-575d-46ef-ab62-c97c2d5352cb",
+    "ReplyToUser": "Claudia Galeano",
+    "ReplyToText": "hola soy Claudia"
   }
 ]

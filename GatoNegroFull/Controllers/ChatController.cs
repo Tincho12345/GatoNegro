@@ -42,37 +42,35 @@ public class ChatController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveMessage(string text, string user, string? replyToId)
+    public async Task<IActionResult> SaveMessage(string text, string user, string? replyToId, string? replyToUser, string? replyToText)
     {
         var messages = GetMessages();
 
-        // 1. Buscamos la foto del usuario en users.json
+        // BUSCAR LA FOTO REAL DEL USUARIO
         string userPhotoUrl = "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
-
         if (System.IO.File.Exists(_usersJsonPath))
         {
             var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
-            // Usamos tu clase UserData que ya tiene 'photoUrl'
             var users = JsonSerializer.Deserialize<List<UserData>>(usersJson);
+            // Buscamos al usuario por nombre para obtener su foto de Cloudinary
             var foundUser = users?.FirstOrDefault(u => u.user == user);
-
-            if (foundUser != null)
+            if (foundUser != null && !string.IsNullOrEmpty(foundUser.photoUrl))
             {
                 userPhotoUrl = foundUser.photoUrl;
             }
         }
 
-        // 2. Creamos el mensaje incluyendo la foto encontrada
         var newMessage = new ChatMessage
         {
             Id = Guid.NewGuid().ToString(),
             User = user,
-            UserPhoto = userPhotoUrl, // <--- Ahora sí se mapea correctamente
+            UserPhoto = userPhotoUrl, // Ahora sí tiene la URL de Cloudinary
             Text = text,
-            Date = DateTime.Now
+            Date = DateTime.Now,
+            ReplyToId = replyToId,
+            ReplyToUser = replyToUser,
+            ReplyToText = replyToText
         };
-
-        // ... resto de la lógica de ReplyToId ...
 
         messages.Add(newMessage);
         SaveMessages(messages);
