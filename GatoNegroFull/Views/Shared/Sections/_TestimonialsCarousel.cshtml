@@ -1,0 +1,71 @@
+﻿<section id="testimonials" class="section" style="margin-top: 32px; margin-bottom: 32px;">
+    <div class="container position-relative">
+        @{
+            var testimonios = Model ?? Enumerable.Empty<GatoNegroFull.Models.Testimonio>();
+            bool puedeEditar = ViewBag.PuedeEditar as bool? ?? false;
+        }
+
+        <div class="row justify-content-center text-center my-2">
+            <div class="col-lg-8">
+                <div class="hero-glass-card" data-aos="fade-up">
+                    <span class="subtitle">Testimonios</span>
+                    <h2>Lo que dicen nuestros clientes</h2>
+                    <p>Confían en nosotros para lucir su mejor versión.</p>
+
+                    <div class="hero-buttons">
+                        <button class="btn btn-outline-light btn-reserva px-4 my-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#uploadTestimonioModal">
+                            Subir Testimonio
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            @foreach (var t in testimonios)
+            {
+                var imgSrc = t.ImagenUrl;
+
+                <div class="col-md-4 col-lg-3 mb-4" data-aos="fade-up">
+                    @* Quitamos h-100 para permitir que cada card tenga su propio alto *@
+                    <div class="glass-card d-flex flex-column" data-comment="@t.Comentario" data-name="@t.Nombre">
+                        <div class="glass-card-body p-2 d-flex flex-column text-center">
+
+                            @* Contenedor de imagen: se ajusta al contenido *@
+                            <div class="img-wrapper mb-3 text-center">
+                                <img src="@imgSrc"
+                                     class="img-fluid rounded"
+                                     alt="@t.Nombre"
+                                     style="width:100%; height:auto; max-height:250px; object-fit:cover; cursor:pointer;"
+                                     onclick="openImage(this)" />
+                            </div>
+
+                            @* Contenido del testimonio: ya no necesita flex-grow-1 *@
+                            <div class="testimonio-text mb-2">
+                                <p class="fst-italic text-white mb-2">"@t.Comentario"</p>
+                                <h6 class="fw-bold mb-0 text-white-50">@t.Nombre</h6>
+                                <small class="text-white-50">@t.Cargo</small>
+                            </div>
+
+                            @if (puedeEditar)
+                            {
+                                @* El botón simplemente aparece al final del texto *@
+                                <div class="pt-2">
+                                    <div class="hero-buttons">
+                                        <button type="button"
+                                                class="btn btn-outline-danger btn-reserva px-4 btn-eliminar-testimonio"
+                                                data-id="@t.Id">
+                                            <i class="bi bi-trash me-1"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>

@@ -1,0 +1,53 @@
+﻿@{
+    var puedeVer = ViewData["puedeVer"] as bool? ?? false;
+    var puedeEditar = ViewData["puedeEditar"] as bool? ?? false;
+    var listaObjetos = ViewData["listaObjetos"] as List<GatoNegroFull.Models.Testimonio> ?? new();
+}
+
+@if (puedeVer && listaObjetos.Any())
+{
+    <section class="glass-cards-section py-5">
+        <div class="container">
+            <div class="row justify-content-center text-center">
+                <div class="row justify-content-center text-center gy-4">
+                    @* Agregamos gy-4 para separación vertical *@
+                    @foreach (var item in listaObjetos)
+                    {
+                        <div class="col-md-4 col-lg-3 d-flex" data-aos="fade-up">
+                            @* Agregamos d-flex aquí *@
+                            <div class="glass-card">
+                                @* Quitamos d-flex manual de aquí, ya lo maneja el CSS *@
+                                <div class="glass-card-body p-2">
+                                    <div class="img-wrapper mb-2">
+                                        <img src="@item.ImagenUrl"
+                                             class="img-fluid rounded"
+                                             alt="Galería"
+                                             style="width: 100%; height: auto; cursor: pointer;"
+                                             onclick="openImage(this)" />
+                                    </div>
+
+                                    @if (puedeEditar)
+                                    {
+                                        <div class="pt-2 mt-auto">
+                                            @* mt-auto empuja el botón siempre al fondo *@
+                                            <div class="hero-buttons">
+                                                <form asp-controller="Imagen" asp-action="Delete" method="post" class="d-inline">
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-reserva px-4 btn-eliminar-imagen-galeria"
+                                                            data-id="@item.Id">
+                                                        <i class="bi bi-trash me-1"></i> Eliminar
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+}

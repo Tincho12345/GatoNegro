@@ -1,0 +1,263 @@
+﻿@model IEnumerable<GatoNegroFull.Models.Testimonio>
+@using System.IO
+@using System.Text.Json
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "~/Views/Shared/_LayoutLanding.cshtml";
+    ViewData["Title"] = "Galería Gato Negro";
+
+    // Constantes de configuración
+    const string ImageFolder = "GatoNegro";
+
+    // 1. Manejo de Sesión y Permisos
+    var companyId = Context.Request.Query["companyId"].ToString();
+    if (string.IsNullOrWhiteSpace(companyId))
+    {
+        companyId = HttpContextAccessor.HttpContext?.Session.GetString("CompanyId") ?? "";
+    }
+
+    // Lógica de permisos para GatoNegroFull
+    bool puedeEditar = true; // Mantengo tu hardcode original
+    bool puedeVer = true;
+
+    var userNameSession = HttpContextAccessor.HttpContext?.Session.GetString("ChatUserName");
+    bool estaLogueado = !string.IsNullOrEmpty(userNameSession);
+
+
+    // 2. Carga de Galería desde JSON
+    var galeriaJsonPath = System.IO.Path.Combine(Env.WebRootPath, "images", ImageFolder, "galeria.json");
+    List<GatoNegroFull.Models.Testimonio> listaGaleria = new();
+
+    if (System.IO.File.Exists(galeriaJsonPath))
+    {
+        try
+        {
+            var json = System.IO.File.ReadAllText(galeriaJsonPath);
+            listaGaleria = JsonSerializer.Deserialize<List<GatoNegroFull.Models.Testimonio>>(json) ?? new();
+        }
+        catch { /* Log error if necessary */ }
+    }
+
+    var arrayImagenes = listaGaleria.Select(x => x.ImagenUrl).ToArray();
+}
+
+<div class="galeria-gato-negro">
+    <partial name="Sections/_Hero" />
+
+    @{
+        var modelVisible = new GatoNegroFull.Models.VisibleContentViewModel
+        {
+            PuedeEditar = puedeEditar,
+            PuedeVer = puedeVer,
+            Images = arrayImagenes,
+            ImageFolder = "" 
+        };
+    }
+
+    <partial name="Sections/_VisibleContent" model="modelVisible" />
+    <partial name="Sections/_UploadImage" model="puedeEditar" />
+
+    @{
+        ViewData["puedeVer"] = puedeVer;
+        ViewData["puedeEditar"] = puedeEditar;
+        ViewData["images"] = arrayImagenes;
+        ViewData["listaObjetos"] = listaGaleria;
+    }
+
+    <partial name="Sections/_Gallery" />
+    <partial name="Sections/_Services" />
+
+    @{ ViewBag.PuedeEditar = puedeEditar; }
+    <partial name="Sections/_TestimonialsCarousel" model="Model" />
+    <partial name="Sections/_Contact" />
+
+    <partial name="Modals/_UploadTestimonioModal" />
+    <partial name="Modals/_ImageModal" />
+</div>
+
+<!-- Contenedor de Botones Flotantes -->
+<div class="contenedor-flotante-chat" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
+    <div class="d-flex flex-row align-items-center gap-3">
+
+        <!-- Botón de Registro (Alta) corregido -->
+        <div id="btnRegister" class="btn-chat-flotante" title="Darse de alta" style="cursor: pointer;" onclick="showAddUserModal()">
+            <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 60px; height: 60px;">
+                <i class="bi bi-person-plus" style="font-size: 28px;"></i>
+            </div>
+        </div>
+
+        <!-- Botón de Login (Perfil) -->
+        <div id="btnLogin" class="btn-chat-flotante" title="Ingresar" style="cursor: pointer;">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 60px; height: 60px;">
+                <i class="bi bi-person" style="font-size: 28px;"></i>
+            </div>
+        </div>
+
+        <!-- Botón de Chat (WhatsApp) -->
+        <div id="btnChat" class="btn-chat-flotante" title="Abrir Chat" style="cursor: pointer;">
+            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 60px; height: 60px;">
+                <i class="bi bi-whatsapp" style="font-size: 30px;"></i>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal de Chat Estilo WhatsApp -->
+<div class="modal fade" id="chatModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        @* Altura fija del 80% de la pantalla para mantener la estética de app móvil *@
+        <div class="modal-content border-0 shadow" style="border-radius: 15px; overflow: hidden; height: 80vh;">
+
+            <!-- Header Fijo -->
+            <div class="modal-header bg-success text-white border-0 flex-shrink-0 p-3">
+                <h6 class="modal-title d-flex align-items-center m-0">
+                    <i class="bi bi-person-circle me-2"></i> CHAT GRUPAL
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Cuerpo del Chat con Scroll -->
+            <div class="modal-body p-0 d-flex flex-column overflow-auto"
+                 id="chatContainer"
+                 style="background-color: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); flex-grow: 1;">
+
+                <div id="chatMessages" class="py-3 px-3">
+                    <!-- Los mensajes se inyectan dinámicamente mediante JS -->
+                </div>
+            </div>
+
+            <!-- Footer Fijo -->
+            <div class="modal-footer border-0 bg-white flex-shrink-0 p-2 d-block shadow-lg">
+                @if (estaLogueado)
+                {
+                    <!-- Vista previa de respuesta (se activa al responder mensajes) -->
+                    <div id="replyPreview" class="rounded mb-2" style="display:none; background: #e9ecef; padding: 5px 10px; border-left: 4px solid #198754;">
+                        <div class="d-flex justify-content-between">
+                            <small id="replyUser" style="color: #198754; font-weight: bold;"></small>
+                            <i class="bi bi-x-lg" style="cursor:pointer; font-size: 0.7rem;" onclick="cancelReply()"></i>
+                        </div>
+                        <div id="replyText" class="text-truncate small"></div>
+                    </div>
+
+                    <!-- Input de mensaje para usuarios logueados -->
+                    <div class="input-group bg-light rounded-pill border overflow-hidden" style="padding: 2px;">
+                        <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-3 bg-transparent" placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
+                        <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" id="btnSend" type="button" style="width: 35px; height: 35px; margin: 2px;" onclick="sendMessage()">
+                            <i id="sendIcon" class="bi bi-send-fill" style="font-size: 0.8rem;"></i>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- Aviso para visitantes sin sesión -->
+                    <div class="text-center py-2 px-3 bg-light rounded">
+                        <i class="bi bi-lock-fill text-muted me-2"></i>
+                        <span class="read-only-notice" style="font-size: 0.85rem; color: #6c757d;">
+                            Modo solo lectura. Inicia sesión para participar.
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Login -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white p-3">
+                <h6 class="modal-title m-0"><i class="bi bi-person-circle me-2"></i> Identificarse</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="mb-3">
+                    <label class="form-label small">Usuario</label>
+                    <input type="text" id="loginUser" class="form-control form-control-sm">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Contraseña (ID)</label>
+                    <div class="input-group">
+                        <input type="password" id="loginPass" class="form-control form-control-sm border-end-0">
+                        <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" data-target="loginPass" style="border-color: #dee2e6;">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="loginError" class="text-danger x-small" style="display:none;">Datos incorrectos</div>
+            </div>
+            <div class="modal-footer p-2">
+                <button class="btn btn-primary btn-sm w-100" id="btnDoLogin">Entrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Registro (Alta de Usuarios) Actualizado -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark p-3">
+                <h6 class="modal-title m-0"><i class="bi bi-person-plus-fill me-2"></i> Nuevo Usuario</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="mb-3">
+                    <label class="form-label small">Escribe tu nombre</label>
+                    <input type="text" id="regUser" class="form-control form-control-sm" placeholder="Ej: Carlos">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Crea tu contraseña</label>
+                    <div class="input-group">
+                        <input type="password" id="regPass" class="form-control form-control-sm border-end-0" placeholder="Mínimo 4 caracteres">
+                        <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" data-target="regPass" style="border-color: #dee2e6;">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- NUEVO: Campo para Foto de Perfil -->
+                <div class="mb-3">
+                    <label class="form-label small">Foto de perfil (Opcional)</label>
+                    <input type="file" id="regPhoto" class="form-control form-control-sm" accept="image/*">
+                </div>
+
+                <div id="regError" class="text-danger x-small" style="display:none; font-size: 0.75rem;"></div>
+            </div>
+            <div class="modal-footer p-2">
+                <button class="btn btn-warning btn-sm w-100 fw-bold" id="btnDoRegister">Crear Cuenta</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script>
+        // CORRECCIÓN: Usamos la sesión de C# para setear esto inicialmente si existe
+        let CURRENT_USER = "@(userNameSession ?? "Visitante")";
+        
+        // Si C# dice que no está logueado, forzamos Visitante en localStorage
+        if("@estaLogueado" === "False"){
+             localStorage.setItem("chatUser", "Visitante");
+             CURRENT_USER = "Visitante";
+        } else {
+             localStorage.setItem("chatUser", CURRENT_USER);
+        }
+
+        
+        // Función para cancelar la edición o respuesta (Solo si existe el elemento)
+        function cancelReply() {
+            const preview = document.getElementById('replyPreview');
+            if(!preview) return; // No existe en modo solo lectura
+
+            preview.style.display = 'none';
+            document.getElementById('chatInput').value = '';
+            document.getElementById('sendIcon').className = 'bi bi-send-fill';
+            
+            if(typeof editingMsgId !== 'undefined') editingMsgId = null;
+            if(typeof replyingToId !== 'undefined') replyingToId = null;
+        }
+    </script>
+}

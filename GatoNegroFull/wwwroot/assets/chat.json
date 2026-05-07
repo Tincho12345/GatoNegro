@@ -1,0 +1,22 @@
+[
+  {
+    "Id": "2571f6d2-575d-46ef-ab62-c97c2d5352cb",
+    "User": "Claudia Galeano",
+    "Text": "hola soy Claudia",
+    "Date": "2026-05-02T11:49:07.209113-03:00",
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null,
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1777733619/perfiles_gato_negro/WhatsApp_Image_2026-04-25_at_3.33.21_PM_fdbmxq.jpg"
+  },
+  {
+    "Id": "eadb4b56-d205-4465-88c1-5015413607ac",
+    "User": "Admin",
+    "Text": "hola claudia",
+    "Date": "2026-05-02T11:49:30.526945-03:00",
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null,
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg"
+  }
+]

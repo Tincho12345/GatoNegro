@@ -1,0 +1,24 @@
+﻿@model bool
+
+@if (Model)
+{
+    <div class="container mt-4">
+        <form id="formSubirImagen"
+              asp-controller="Imagen"
+              asp-action="Upload"
+              method="post"
+              enctype="multipart/form-data"
+              class="d-flex gap-2 align-items-center">
+
+            <input type="file"
+                   name="imageFile"
+                   class="form-control"
+                   required />
+
+            <button type="submit"
+                    class="btn btn-success">
+                Subir imagen
+            </button>
+        </form>
+    </div>
+}

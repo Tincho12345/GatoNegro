@@ -1,0 +1,40 @@
+﻿@model GatoNegroFull.Models.VisibleContentViewModel
+
+@if (Model.PuedeVer && Model.Images.Length > 0)
+{
+    <section class="my-1">
+        <div class="container">
+            <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    @for (int i = 0; i < Model.Images.Length; i++)
+                    {
+                        <div class="carousel-item @(i == 0 ? "active" : "")">
+                            <div class="img-wrapper" onclick="openImage(this)">
+                                @* CAMBIO: Quitamos la ruta local y usamos la URL directa *@
+                                <img src="@Model.Images[i]" 
+                                     class="d-block w-100" 
+                                     alt="Imagen @(i + 1)" />
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (Model.Images.Length > 1)
+                {
+                    <button class="carousel-control-prev"
+                            type="button"
+                            data-bs-target="#heroCarousel"
+                            data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                    </button>
+
+                    <button class="carousel-control-next"
+                            type="button"
+                            data-bs-target="#heroCarousel"
+                            data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                    </button>
+                }
+            </div>
+        </div>
+    </section>
+}

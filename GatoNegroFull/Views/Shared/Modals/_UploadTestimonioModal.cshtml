@@ -1,0 +1,55 @@
+﻿<!-- =========================
+     MODAL SUBIR TESTIMONIO
+========================= -->
+<div class="modal fade" id="uploadTestimonioModal" tabindex="-1" aria-labelledby="uploadTestimonioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modal-glass position-relative">
+
+            <span class="modal-close"
+                  data-bs-dismiss="modal"
+                  style="position:absolute; top:10px; right:10px; font-size:30px; color:white; cursor:pointer;">
+                &times;
+            </span>
+
+            <div class="modal-header text-center border-0">
+                <h5 class="modal-title w-100 fw-bold" id="uploadTestimonioModalLabel">
+                    Subí un nuevo testimonio
+                </h5>
+            </div>
+
+            <div class="modal-body">
+                <form id="formTestimonio" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <input type="text"
+                           name="nombre"
+                           class="form-control mb-3"
+                           placeholder="Nombre"
+                           required />
+
+                    <input type="text"
+                           name="cargo"
+                           class="form-control mb-3"
+                           placeholder="Cargo"
+                           required />
+
+                    <textarea name="comentario"
+                              class="form-control mb-3"
+                              rows="4"
+                              placeholder="Comentario"
+                              required></textarea>
+
+                    <input type="file"
+                           name="imageFile"
+                           class="form-control mb-3"
+                           required />
+
+                    <button type="submit"
+                            class="btn btn-outline-light btn-reserva px-4 w-100">
+                        Subir Testimonio
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

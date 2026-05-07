@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="es-ar">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - Gato Negro</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="@Url.Content("~/favicon.ico")" />
+    <link rel="icon" type="image/x-icon" href="@Url.Content("~/images/favicon.ico")" />
+    <link rel="apple-touch-icon" href="@Url.Content("~/images/apple-touch-icon.png")" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+
+    <!-- Vendor CSS -->
+    <link rel="stylesheet" href="@Url.Content("~/assets/vendor/bootstrap/css/bootstrap.min.css")" />
+    <link rel="stylesheet" href="@Url.Content("~/assets/vendor/bootstrap-icons/bootstrap-icons.css")" />
+    <link rel="stylesheet" href="@Url.Content("~/assets/vendor/aos/aos.css")" />
+    <link rel="stylesheet" href="@Url.Content("~/assets/vendor/swiper/swiper-bundle.min.css")" />
+    <link rel="stylesheet" href="@Url.Content("~/assets/vendor/glightbox/css/glightbox.min.css")" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Main CSS -->
+    @* <link rel="stylesheet" href="@Url.Content("~/assets/css/main.css")" asp-append-version="true" /> *@
+    <link rel="stylesheet" href="@Url.Content("~/css/site.css")" asp-append-version="true" />
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header id="header" class="header fixed-top">
+        <div class="container-fluid container-xl">
+            <div class="d-flex align-items-center justify-content-between">
+
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="main">
+        @RenderBody()
+    </main>
+
+    <!-- FOOTER -->
+    <footer id="footer" style="background: transparent;">
+         <div class="container position-relative">
+            <div class="row text-center justify-content-center gy-4">
+
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="glass-card">
+                        <div class="glass-card-body p-4 d-flex flex-column align-items-center">
+                            <i class="fas fa-cut fa-2x mb-3 text-primary"></i>
+                            <h5>Gato Negro</h5>
+                            <p class="mb-2">Peluquería y barbería profesional. Estilo y personalidad.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="glass-card">
+                        <div class="glass-card-body p-4 d-flex flex-column align-items-center">
+                            <i class="fas fa-map-marker-alt fa-2x mb-3 text-success"></i>
+                            <h5>Contacto</h5>
+                            <p class="mb-0">Montecarlo Misiones, Argentina</p>
+                            <p class="mb-0">+54 9 3751 59-xxxx</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="glass-card">
+                        <div class="glass-card-body p-4 d-flex flex-column align-items-center">
+                            <i class="fas fa-share-alt fa-2x mb-3 text-warning"></i>
+                            <h5>Seguinos</h5>
+                            <div class="social-links d-flex gap-3 mt-2">
+                                <a href="#" class="text-white"><i class="bi bi-instagram"></i></a>
+                                <a href="#" class="text-white"><i class="bi bi-facebook"></i></a>
+                                <a href="#" class="text-white"><i class="bi bi-whatsapp"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+ 
+        <div class="footer-glass mt-5 border-top" style="padding: 20px 0;">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span style="color: #ffffff; font-weight: bold;">
+                            &copy; 2025 - Gato Negro Peluquería
+                        </span>
+                        <br />
+                        <small style="color: #bbbbbb; font-style: italic;">
+                            Diseño y desarrollo web: Carlos M. Espíndola
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+    </footer>
+
+    <!-- Scroll Top -->
+    <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+        <i class="bi bi-arrow-up-short"></i>
+    </a>
+
+    <!-- Vendor JS -->
+    <script src="~/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/vendor/aos/aos.js"></script>
+    <script src="~/assets/vendor/swiper/swiper-bundle.min.js"></script>
+    <script src="~/assets/vendor/glightbox/js/glightbox.min.js"></script>
+    <script src="~/assets/vendor/purecounter/purecounter_vanilla.js"></script>
+    <!-- Agrega esto en tu archivo .cshtml -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- App JS (Deja solo el que realmente exista en tu carpeta wwwroot) -->
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @RenderSection("Scripts", required: false)
+
+</body>
+</html>

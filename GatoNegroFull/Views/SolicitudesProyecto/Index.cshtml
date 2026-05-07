@@ -1,0 +1,103 @@
+﻿@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Solicitud";
+    ViewData["Titles"] = "Solicitudes de Proyecto";
+    var ruta = ViewContext.RouteData.Values["controller"]?.ToString() ?? "SolicitudesProyecto";
+}
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery AntiforgeryService
+
+<div class="container-fluid py-2">
+    <div class="row mb-1 mb-md-2"></div>
+
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Spinner -->
+            <div id="spinnerCarga" class="text-center py-4" style="display:none;">
+                <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="tblList" class="table table-striped table-bordered nowrap" style="width:100%">
+                    <thead class="table-dark">
+                        <tr id="tableHeaders">
+                            <th>@ViewData["Titles"]</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="createEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="formCrearEditar">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="createEditEntityId" name="id" />
+
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Crear / Editar @ViewData["Title"]
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body custom-scroll-body" id="dynamicFormFields">
+                    <!-- campos dinámicos -->
+                </div>
+
+                @await Html.PartialAsync("_ModalFooter", "success")
+            </div>
+        </form>
+    </div>
+</div>
+@* 
+@section Scripts {
+    <script>
+        window._ruta = '@ruta';
+        window._mostrarColumnasDefault = false;
+        window._viewTitle = '@ViewData["Title"]';
+        window._viewTitles = '@ViewData["Titles"]';
+        window._viewIcon = "fas fa-envelope-open-text";
+
+        // 📌 Estados Solicitud Proyecto
+        window._estadoEnum = [
+            { value: 1, label: '🆕 Nuevo' },
+            { value: 2, label: '📞 Contactado' },
+            { value: 3, label: '📄 Propuesta enviada' },
+            { value: 4, label: '✅ Cerrado' },
+            { value: 5, label: '❌ Descartado' }
+        ];
+        // 📋 Columnas dinámicas
+        window._columnasPersonalizadas = [
+
+            { data: 'nombre', label: 'Nombre', type: 'string', includeInForm: true, includeInTable: true, width: '15%' },
+
+            { data: 'email', label: 'Email', type: 'string', includeInForm: true, includeInTable: true, width: '7%' },
+            { data: 'telefono', label: 'Teléfono', type: 'string', includeInForm: true, includeInTable: true, width: '5%', required: false },
+
+            // 👉 MENSAJE: 3ero en TABLA
+            { data: 'mensaje', label: 'Descripción Proyecto', type: 'string', includeInForm: false, includeInTable: true, width: '35%', className: 'descripcion-wrap' },
+
+            { data: 'tipoProyecto', label: 'Tipo Proyecto', type: 'string', includeInForm: true, includeInTable: true },
+            { data: 'ubicacion', label: 'Ubicación', type: 'string', includeInForm: true, includeInTable: true, required: false },
+            { data: 'etapaProyecto', label: 'Etapa', type: 'string', includeInForm: true, includeInTable: true },
+
+            { data: 'estado', label: 'Sit. Msj.', type: 'dropdown', includeInForm: true, includeInTable: true, width: '5%', options: window._estadoEnum,
+              render: data => window._estadoEnum.find(e => e.value === data)?.label ?? data },
+
+            // 👉 MENSAJE: último en FORM
+            { data: 'mensaje', label: 'Descripción Proyecto', type: 'string', includeInForm: true, includeInTable: false, className: 'descripcion-wrap' }
+        ];
+
+    </script>
+
+    <script type="module" src="/js/main.js"></script>
+}
+ *@

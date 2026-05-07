@@ -1,0 +1,60 @@
+﻿<!-- =========================
+     CONTACTO
+     ========================= -->
+<section id="contact" class="section">
+    <div class="container position-relative">
+
+        <div class="row justify-content-center text-center mb-5">
+            <div class="col-lg-8">
+                <div class="hero-glass-card" data-aos="fade-up">
+                    <span class="subtitle">Contacto</span>
+                    <h2>Reservá tu turno</h2>
+                    <p>Completá el formulario y nos pondremos en contacto con vos.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="glass-card" data-aos="fade-up" data-aos-delay="150">
+                    <div class="glass-card-body p-4">
+
+                        <form id="contactForm" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <input type="text"
+                                   name="nombre"
+                                   class="form-control mb-3"
+                                   placeholder="Nombre"
+                                   required />
+
+                            <input type="email"
+                                   name="email"
+                                   class="form-control mb-3"
+                                   placeholder="Email"
+                                   required />
+
+                            <input type="text"
+                                   name="telefono"
+                                   class="form-control mb-3"
+                                   placeholder="Teléfono (opcional)" />
+
+                            <textarea name="message"
+                                      class="form-control mb-3"
+                                      rows="4"
+                                      placeholder="Mensaje"
+                                      required></textarea>
+
+                            <button type="submit"
+                                    class="btn btn-outline-light btn-reserva px-4 w-100">
+                                Enviar
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
