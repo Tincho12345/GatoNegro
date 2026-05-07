@@ -10,4 +10,5 @@ public class ChatMessage
     public string? ReplyToId { get; set; }
     public string? ReplyToUser { get; set; }
     public string? ReplyToText { get; set; }
+    public string? ImageUrl{ get; set; } // Nueva propiedad para la URL de la imagen
 }

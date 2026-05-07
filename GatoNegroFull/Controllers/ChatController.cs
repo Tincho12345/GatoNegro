@@ -42,30 +42,58 @@ public class ChatController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveMessage(string text, string user, string? replyToId, string? replyToUser, string? replyToText)
+    public async Task<IActionResult> SaveMessage(string? text, string user, IFormFile? imageFile, string? replyToId, string? replyToUser, string? replyToText)
     {
         var messages = GetMessages();
+        string? imageUrl = null;
 
-        // BUSCAR LA FOTO REAL DEL USUARIO
-        string userPhotoUrl = "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
-        if (System.IO.File.Exists(_usersJsonPath))
+        // 1. Subida de imagen adjunta (si existe)
+        if (imageFile != null && imageFile.Length > 0)
         {
-            var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
-            var users = JsonSerializer.Deserialize<List<UserData>>(usersJson);
-            // Buscamos al usuario por nombre para obtener su foto de Cloudinary
-            var foundUser = users?.FirstOrDefault(u => u.user == user);
-            if (foundUser != null && !string.IsNullOrEmpty(foundUser.photoUrl))
+            try
             {
-                userPhotoUrl = foundUser.photoUrl;
+                using var stream = imageFile.OpenReadStream();
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(imageFile.FileName, stream),
+                    Folder = "chat_mensajes"
+                };
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                imageUrl = uploadResult?.SecureUrl?.ToString();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error en ChatController: " + ex.Message);
             }
         }
 
+        // --- NUEVA LÓGICA: Buscar la foto real del usuario ---
+        string userPhoto = "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
+        try
+        {
+            if (System.IO.File.Exists(_usersJsonPath))
+            {
+                var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
+                var users = JsonSerializer.Deserialize<List<UserData>>(usersJson);
+                // Buscamos el usuario por nombre para obtener su photoUrl
+                var foundUser = users?.FirstOrDefault(u => u.user == user);
+                if (foundUser != null && !string.IsNullOrEmpty(foundUser.photoUrl))
+                {
+                    userPhoto = foundUser.photoUrl;
+                }
+            }
+        }
+        catch { /* Si falla algo, queda el avatar por defecto */ }
+        // ----------------------------------------------------
+
+        // 2. Creación del mensaje con la foto real del perfil
         var newMessage = new ChatMessage
         {
             Id = Guid.NewGuid().ToString(),
-            User = user,
-            UserPhoto = userPhotoUrl, // Ahora sí tiene la URL de Cloudinary
-            Text = text,
+            User = user ?? "Anónimo",
+            UserPhoto = userPhoto, // <-- AQUÍ usamos la foto encontrada
+            Text = text ?? "",
+            ImageUrl = imageUrl,
             Date = DateTime.Now,
             ReplyToId = replyToId,
             ReplyToUser = replyToUser,
@@ -74,8 +102,8 @@ public class ChatController : Controller
 
         messages.Add(newMessage);
         SaveMessages(messages);
-
         await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
+
         return Json(new { success = true });
     }
 

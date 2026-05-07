@@ -4,17 +4,5 @@
     "pass": "Admin1234",
     "role": "Admin",
     "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg"
-  },
-  {
-    "user": "JUANITA",
-    "pass": "Tincho1234",
-    "role": "User",
-    "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1777732669/perfiles_gato_negro/leti_pwvuit.png"
-  },
-  {
-    "user": "Claudia Galeano",
-    "pass": "Tincho1234",
-    "role": "User",
-    "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1777733619/perfiles_gato_negro/WhatsApp_Image_2026-04-25_at_3.33.21_PM_fdbmxq.jpg"
   }
 ]

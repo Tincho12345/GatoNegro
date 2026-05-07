@@ -20,7 +20,6 @@
 
     const getActiveUser = () => localStorage.getItem("chatUser") || "Visitante";
     const getActiveRole = () => localStorage.getItem("chatRole") || "Visitante";
-
     async function setupUserSession(user, role) {
         localStorage.setItem("chatUser", user);
         localStorage.setItem("chatRole", role || "User");
@@ -29,6 +28,7 @@
 
         const footer = document.querySelector("#chatModal .modal-footer");
         if (footer) {
+            // REFACTORIZACIÓN COMPLETA DEL FOOTER (Estilo WhatsApp)
             footer.innerHTML = `
                 <div id="replyPreview" class="rounded mb-2 w-100" style="display:none; background: #e9ecef; padding: 5px 10px; border-left: 4px solid #198754;">
                     <div class="d-flex justify-content-between">
@@ -37,18 +37,37 @@
                     </div>
                     <div id="replyText" class="text-truncate small"></div>
                 </div>
+                
                 <div class="input-group bg-light rounded-pill border overflow-hidden w-100" style="padding: 2px;">
-                    <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-3 bg-transparent" placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
-                    <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" id="btnSend" type="button" style="width: 35px; height: 35px; margin: 2px;" onclick="sendMessage()">
+                    <button class="btn btn-light rounded-circle border-0 text-muted d-flex align-items-center justify-content-center" 
+                            type="button" 
+                            style="width: 35px; height: 35px; background: transparent;" 
+                            onclick="document.getElementById('chatFile').click()">
+                        <i class="bi bi-paperclip" style="font-size: 1.2rem; transform: rotate(45deg);"></i>
+                    </button>
+
+                    <input type="file" id="chatFile" style="display:none" accept="image/*" onchange="window.sendImage(this)">
+
+                    <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-2 bg-transparent" 
+                           placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
+
+                    <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" 
+                            id="btnSend" type="button" style="width: 35px; height: 35px; margin: 2px;" 
+                            onclick="sendMessage()">
                         <i id="sendIcon" class="bi bi-send-fill" style="font-size: 0.8rem;"></i>
                     </button>
                 </div>`;
 
+            // Re-vincular el evento Enter al nuevo input creado
             const newInput = document.getElementById("chatInput");
             newInput?.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") window.sendMessage();
             });
         }
+
+        // Acciones finales de la sesión
+        if (loginModal) loginModal.hide();
+        if (registerModal) registerModal.hide();
 
         chatModal.show();
         await loadChatHistory();
@@ -153,6 +172,35 @@
         } catch (err) { console.error(err); }
     };
 
+    window.sendImage = async (input) => {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append("user", getActiveUser());
+        formData.append("imageFile", file); // Enviamos el archivo
+
+        // Mostramos un aviso de carga (opcional pero recomendado)
+        if (window.GlobalToast) {
+            window.GlobalToast.fire({ icon: 'info', title: 'Subiendo imagen...' });
+        }
+
+        try {
+            const res = await fetch('/Chat/SaveMessage', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                input.value = ""; // Limpiar el input file
+            }
+        } catch (err) {
+            console.error("Error al subir foto:", err);
+        }
+    };
+
+    window.showAddUserModal = () => {
+        if (loginModal) loginModal.hide();
+        if (registerModal) registerModal.show();
+    };
+
     async function loadChatHistory() {
         const chatContainer = document.getElementById("chatContainer");
         const chatMessages = document.getElementById("chatMessages");
@@ -162,6 +210,8 @@
             const response = await fetch(`/assets/chat.json?v=${Date.now()}`);
             if (!response.ok) return;
             const messages = await response.json();
+
+            // Guardar posición del scroll antes de renderizar
             const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
 
             const currentUser = getActiveUser();
@@ -171,39 +221,58 @@
                 const isMe = m.User === currentUser;
                 const canManage = (currentRole === "Admin") || (currentRole === "User" && isMe);
                 const canReply = currentRole !== "Visitante";
-                const cleanText = m.Text.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-                const userImg = m.UserPhoto || 'https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png';
+
+                // Limpieza de texto para evitar errores en los atributos onclick
+                const cleanText = m.Text ? m.Text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+
+                // --- CORRECCIÓN DEL AVATAR ---
+                // Si m.UserPhoto no existe o es un string vacío, usa el avatar por defecto
+                const defaultAvatar = 'https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png';
+                const userImg = (m.UserPhoto && m.UserPhoto.trim() !== "") ? m.UserPhoto : defaultAvatar;
+
+                // Lógica para renderizar la imagen adjunta si existe
+                const imageHtml = m.ImageUrl
+                    ? `<img src="${m.ImageUrl}" class="img-fluid rounded mb-2 d-block shadow-sm" 
+                        style="max-height: 250px; cursor: pointer; object-fit: cover; width: 100%;" 
+                        onclick="window.open('${m.ImageUrl}', '_blank')">`
+                    : '';
 
                 return `
-                    <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"}">
-                        ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
-                        <div class="message-wrapper" style="max-width: 80%;">
-                            <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <small style="color: #075E54; font-weight: bold; font-size: 0.75rem;">${m.User}</small>
-                                    ${canReply || canManage ? `
-                                    <div class="dropdown ms-2">
-                                        <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown"></i>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                            ${canReply ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareReply('${m.Id}', '${m.User}', '${cleanText}')"><i class="bi bi-reply me-2"></i>Responder</a></li>` : ''}
-                                            ${canManage ? `
-                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareEdit('${m.Id}', '${cleanText}')"><i class="bi bi-pencil me-2"></i>Editar</a></li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMessage('${m.Id}')"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
-                                            ` : ''}
-                                        </ul>
-                                    </div>` : ''}
-                                </div>
-                                ${m.ReplyToText ? `<div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;"><strong>${m.ReplyToUser}</strong><br>${m.ReplyToText}</div>` : ''}
-                                <span style="word-break: break-word;">${m.Text}</span>
+                <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"}">
+                    ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
+                    <div class="message-wrapper" style="max-width: 80%;">
+                        <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <small style="color: #075E54; font-weight: bold; font-size: 0.75rem;">${m.User}</small>
+                                ${canReply || canManage ? `
+                                <div class="dropdown ms-2">
+                                    <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown"></i>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                        ${canReply ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareReply('${m.Id}', '${m.User}', '${cleanText}')"><i class="bi bi-reply me-2"></i>Responder</a></li>` : ''}
+                                        ${canManage ? `
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareEdit('${m.Id}', '${cleanText}')"><i class="bi bi-pencil me-2"></i>Editar</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMessage('${m.Id}')"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
+                                        ` : ''}
+                                    </ul>
+                                </div>` : ''}
                             </div>
+                            
+                            ${m.ReplyToText ? `<div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;"><strong>${m.ReplyToUser}</strong><br>${m.ReplyToText}</div>` : ''}
+                            
+                            ${imageHtml}
+                            
+                            <span style="word-break: break-word;">${m.Text || ''}</span>
                         </div>
-                        ${isMe ? `<img src="${userImg}" class="rounded-circle ms-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
-                    </div>`;
+                    </div>
+                    ${isMe ? `<img src="${userImg}" class="rounded-circle ms-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
+                </div>`;
             }).join('');
 
             if (isAtBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error("Error al cargar historial:", err);
+        }
     }
 
     // --- SIGNALR ---

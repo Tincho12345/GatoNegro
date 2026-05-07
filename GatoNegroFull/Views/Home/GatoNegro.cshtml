@@ -128,11 +128,9 @@
                 </div>
             </div>
 
-            <!-- Footer Fijo -->
             <div class="modal-footer border-0 bg-white flex-shrink-0 p-2 d-block shadow-lg">
                 @if (estaLogueado)
                 {
-                    <!-- Vista previa de respuesta (se activa al responder mensajes) -->
                     <div id="replyPreview" class="rounded mb-2" style="display:none; background: #e9ecef; padding: 5px 10px; border-left: 4px solid #198754;">
                         <div class="d-flex justify-content-between">
                             <small id="replyUser" style="color: #198754; font-weight: bold;"></small>
@@ -141,9 +139,19 @@
                         <div id="replyText" class="text-truncate small"></div>
                     </div>
 
-                    <!-- Input de mensaje para usuarios logueados -->
                     <div class="input-group bg-light rounded-pill border overflow-hidden" style="padding: 2px;">
-                        <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-3 bg-transparent" placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
+
+                        <button class="btn btn-light rounded-circle border-0 text-muted d-flex align-items-center justify-content-center"
+                                type="button"
+                                style="width: 35px; height: 35px; background: transparent;"
+                                onclick="document.getElementById('chatFile').click()">
+                            <i class="bi bi-paperclip" style="font-size: 1.2rem; transform: rotate(45deg);"></i>
+                        </button>
+
+                        <input type="file" id="chatFile" style="display:none" accept="image/*" onchange="window.sendImage(this)">
+
+                        <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-2 bg-transparent" placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
+
                         <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" id="btnSend" type="button" style="width: 35px; height: 35px; margin: 2px;" onclick="sendMessage()">
                             <i id="sendIcon" class="bi bi-send-fill" style="font-size: 0.8rem;"></i>
                         </button>
@@ -151,7 +159,6 @@
                 }
                 else
                 {
-                    <!-- Aviso para visitantes sin sesión -->
                     <div class="text-center py-2 px-3 bg-light rounded">
                         <i class="bi bi-lock-fill text-muted me-2"></i>
                         <span class="read-only-notice" style="font-size: 0.85rem; color: #6c757d;">
