@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "Id": "6b3f04ce-b9e2-4e2f-a0bc-03a47ca1b3b9",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "hola",
+    "ImageUrl": null,
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null,
+    "Date": "2026-05-08T09:53:44"
+  }
+]

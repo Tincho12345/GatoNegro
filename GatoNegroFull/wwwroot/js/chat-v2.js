@@ -165,20 +165,71 @@
     };
 
     window.deleteMessage = async (id) => {
-        if (typeof EleganteSwal === 'undefined') return;
-        const { isConfirmed } = await EleganteSwal.fire({
+        // Usamos el mismo estilo que en Reset Password
+        const { isConfirmed } = await Swal.fire({
             title: '¿Eliminar mensaje?',
+            text: "Esta acción no se puede deshacer",
             icon: 'warning',
+            iconColor: '#f8bb86',
             showCancelButton: true,
-            confirmButtonText: 'Sí, borrar'
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            background: '#1e1e2d', // Estilo Dark
+            color: '#ffffff',
+            // 🔥 EFECTO LINTERNA EN EL MODAL
+            didOpen: (modal) => {
+                const confirmBtn = Swal.getConfirmButton();
+                const cancelBtn = Swal.getCancelButton();
+
+                confirmBtn.classList.add('swal-button-glow');
+                cancelBtn.classList.add('swal-button-glow');
+
+                modal.addEventListener('mousemove', (e) => {
+                    const rectConfirm = confirmBtn.getBoundingClientRect();
+                    const rectCancel = cancelBtn.getBoundingClientRect();
+
+                    // Posición relativa para el brillo del botón Confirmar
+                    confirmBtn.style.setProperty('--x', `${e.clientX - rectConfirm.left}px`);
+                    confirmBtn.style.setProperty('--y', `${e.clientY - rectConfirm.top}px`);
+
+                    // Posición relativa para el brillo del botón Cancelar
+                    cancelBtn.style.setProperty('--x', `${e.clientX - rectCancel.left}px`);
+                    cancelBtn.style.setProperty('--y', `${e.clientY - rectCancel.top}px`);
+                });
+            },
         });
+
         if (!isConfirmed) return;
+
+        // Lógica de eliminación (tu código original)
         const formData = new FormData();
         formData.append("id", id);
         formData.append("user", getActiveUser());
+
         try {
-            await fetch('/Chat/DeleteMessage', { method: 'POST', body: formData });
-        } catch (err) { console.error(err); }
+            const res = await fetch('/Chat/DeleteMessage', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.success) {
+                // Notificación tipo Toast al terminar
+                Swal.mixin({
+                    toast: true,
+                    position: 'center',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    background: '#1e1e2d',
+                    color: '#ffffff'
+                }).fire({
+                    icon: 'success',
+                    title: 'Mensaje eliminado'
+                });
+                await loadChatHistory();
+            }
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     window.sendImage = async (input) => {
@@ -189,13 +240,21 @@
         formData.append("user", getActiveUser());
         formData.append("imageFile", file);
 
-        // 1. Mostrar Spinner de carga bloqueante
-        let loadingSwal = Swal.fire({
+        // 1. Mostrar Spinner de carga bloqueante (ESTILO DARK)
+        Swal.fire({
             title: 'Subiendo multimedia...',
             html: 'Por favor, espera un momento.',
             allowOutsideClick: false,
-            didOpen: () => {
+            background: '#1e1e2d',
+            color: '#ffffff',
+            didOpen: (modal) => { // <--- Aquí faltaba el parámetro 'modal'
                 Swal.showLoading();
+
+                // Ahora 'modal' ya existe y podemos buscar el loader
+                const loader = modal.querySelector('.swal2-loader');
+                if (loader) {
+                    loader.style.borderTopColor = '#198754';
+                }
             }
         });
 
@@ -203,40 +262,62 @@
             const res = await fetch('/Chat/SaveMessage', { method: 'POST', body: formData });
             const data = await res.json();
 
-            // Cerrar el spinner
             Swal.close();
 
             if (data.success) {
-                // 1. Limpiar el input de archivo (importante para poder re-subir el mismo archivo)
                 input.value = "";
-
-                // 2. Cargar historial inmediatamente
                 await loadChatHistory();
 
-                // 3. Notificación visual rápida
                 if (window.GlobalToast) {
                     window.GlobalToast.fire({
                         icon: 'success',
                         title: '¡Enviado!',
-                        timer: 1500 // Opcional: que desaparezca rápido
+                        background: '#1e1e2d', // Consistencia en Toast
+                        color: '#ffffff',
+                        timer: 1500
                     });
                 }
             } else {
-                // 2. Mostrar error específico del servidor (Tamaño, Cloudinary, etc.)
+                // 2. Error con efecto LINTERNA
                 Swal.fire({
                     icon: 'error',
                     title: 'No se pudo subir',
-                    text: data.message || 'Error desconocido al procesar el archivo.'
+                    text: data.message || 'Error desconocido al procesar el archivo.',
+                    background: '#1e1e2d',
+                    color: '#ffffff',
+                    confirmButtonColor: '#3085d6',
+                    // APLICAMOS LINTERNA AL BOTÓN DE OK
+                    didOpen: (modal) => {
+                        const confirmBtn = Swal.getConfirmButton();
+                        confirmBtn.classList.add('swal-button-glow');
+                        modal.addEventListener('mousemove', (e) => {
+                            const rect = confirmBtn.getBoundingClientRect();
+                            confirmBtn.style.setProperty('--x', `${e.clientX - rect.left}px`);
+                            confirmBtn.style.setProperty('--y', `${e.clientY - rect.top}px`);
+                        });
+                    }
                 });
                 input.value = "";
             }
         } catch (err) {
             Swal.close();
             console.error("Error al subir:", err);
+            // 3. Error de conexión con efecto LINTERNA
             Swal.fire({
                 icon: 'error',
                 title: 'Fallo de conexión',
-                text: 'Hubo un problema al contactar con el servidor.'
+                text: 'Hubo un problema al contactar con el servidor.',
+                background: '#1e1e2d',
+                color: '#ffffff',
+                didOpen: (modal) => {
+                    const confirmBtn = Swal.getConfirmButton();
+                    confirmBtn.classList.add('swal-button-glow');
+                    modal.addEventListener('mousemove', (e) => {
+                        const rect = confirmBtn.getBoundingClientRect();
+                        confirmBtn.style.setProperty('--x', `${e.clientX - rect.left}px`);
+                        confirmBtn.style.setProperty('--y', `${e.clientY - rect.top}px`);
+                    });
+                }
             });
         }
     };
@@ -284,8 +365,8 @@
 
                     if (isVideo) {
                         mediaHtml = `
-                        <div class="video-wrapper mb-2 shadow-sm rounded overflow-hidden">
-                            <video controls style="max-height: 250px; width: 100%; display: block; background: #000;">
+                        <div class="video-wrapper mb-2 shadow-sm rounded overflow-hidden" style="background: #000; position: relative;">
+                            <video controls style="max-height: 250px; width: 100%; display: block;">
                                 <source src="${m.ImageUrl}" type="video/mp4">
                                 Tu navegador no soporta el video.
                             </video>
@@ -294,17 +375,27 @@
                         mediaHtml = `
                         <img src="${m.ImageUrl}" 
                              class="img-fluid rounded mb-2 d-block shadow-sm" 
-                             style="max-height: 250px; cursor: pointer; object-fit: cover; width: 100%;" 
-                             onclick="window.open('${m.ImageUrl}', '_blank')">`;
+                             style="max-height: 250px; cursor: pointer; object-fit: cover; width: 100%; transition: opacity 0.2s;" 
+                             onclick="window.open('${m.ImageUrl}', '_blank')"
+                             onmouseover="this.style.opacity='0.9'"
+                             onmouseout="this.style.opacity='1'">`;
                     }
                 }
 
+                // --- GESTIÓN DE HORA DINÁMICA ---
+                const msgDate = m.Date ? new Date(m.Date) : new Date();
+                const formattedTime = msgDate.toLocaleTimeString('es-AR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
                 return `
-                <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"}">
-                    ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
+                <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"} animate__animated animate__fadeInUp animate__faster">
+                    ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd; align-self: flex-end; margin-bottom: 5px;">` : ''}
                     
                     <div class="message-wrapper" style="max-width: 80%;">
-                        <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                        <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative;">
                             
                             <div class="d-flex justify-content-between align-items-start mb-1">
                                 <small style="color: #075E54; font-weight: bold; font-size: 0.75rem;">${m.User}</small>
@@ -323,28 +414,28 @@
                                 </div>` : ''}
                             </div>
 
-                            ${/* Referencia a respuesta */
-                                m.ReplyToText ? `
-                                            <div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;">
-                                                <strong>${m.ReplyToUser}</strong><br>
-                                                <span class="text-truncate d-block">${m.ReplyToText}</span>
-                                            </div>` : ''
-                                }
+                            ${m.ReplyToText ? `
+                                <div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;">
+                                    <strong>${m.ReplyToUser}</strong><br>
+                                    <span class="text-truncate d-block">${m.ReplyToText}</span>
+                                </div>` : ''
+                    }
 
                             ${mediaHtml}
 
-                            <span style="word-break: break-word; font-size: 0.95rem;">${m.Text || ''}</span>
+                            <span style="word-break: break-word; font-size: 0.95rem; line-height: 1.4;">${m.Text || ''}</span>
                             
-                            <div class="text-end" style="margin-top: -5px;">
-                                <small class="text-muted" style="font-size: 0.65rem;">
-                                    ${new Date(m.Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <div class="text-end" style="margin-top: 2px; margin-bottom: -2px;">
+                                <small class="text-muted" style="font-size: 0.65rem; font-weight: 500;">
+                                    ${formattedTime}
                                 </small>
                             </div>
                         </div>
                     </div>
 
-                    ${isMe ? `<img src="${userImg}" class="rounded-circle ms-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
+                    ${isMe ? `<img src="${userImg}" class="rounded-circle ms-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd; align-self: flex-end; margin-bottom: 5px;">` : ''}
                 </div>`;
+
             }).join('');
 
             // 3. Auto-scroll si el usuario estaba abajo

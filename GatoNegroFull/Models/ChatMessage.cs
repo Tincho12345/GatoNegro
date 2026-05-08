@@ -6,9 +6,11 @@ public class ChatMessage
     public required string User { get; set; }
     public required string UserPhoto { get; set; }
     public required string Text { get; set; }
-    public DateTime Date { get; set; }
+    public string? ImageUrl { get; set; }
     public string? ReplyToId { get; set; }
     public string? ReplyToUser { get; set; }
     public string? ReplyToText { get; set; }
-    public string? ImageUrl{ get; set; } // Nueva propiedad para la URL de la imagen
+
+    // Al marcarla como required, el error desaparece
+    public required string Date { get; set; }
 }

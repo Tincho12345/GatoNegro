@@ -530,3 +530,27 @@ i[aria-hidden="true"] {
         color: #555;
         font-size: 0.8rem;
     }
+
+/* 1. Limpieza de inputs nativos */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+    display: none;
+}
+
+/* 2. Estructura base de botones Swal */
+.swal2-confirm, .swal2-cancel {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.3s ease !important;
+}
+
+    .swal2-confirm:hover, .swal2-cancel:hover {
+        transform: scale(1.05);
+    }
+
+/* 3. El efecto linterna (Glow) */
+.swal-button-glow {
+    /* El !important asegura que pise el color sólido de SweetAlert */
+    background: radial-gradient( circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.35) 0%, transparent 70% ) !important;
+}

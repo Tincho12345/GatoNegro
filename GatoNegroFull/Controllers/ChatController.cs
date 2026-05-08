@@ -26,9 +26,25 @@ public class ChatController : Controller
 
     private List<ChatMessage> GetMessages()
     {
-        if (!System.IO.File.Exists(_chatJsonPath)) return new List<ChatMessage>();
-        var json = System.IO.File.ReadAllText(_chatJsonPath);
-        return JsonSerializer.Deserialize<List<ChatMessage>>(json) ?? new List<ChatMessage>();
+        try
+        {
+            if (!System.IO.File.Exists(_chatJsonPath)) return new List<ChatMessage>();
+
+            var json = System.IO.File.ReadAllText(_chatJsonPath);
+
+            // Usamos una opción para que no sea tan estricto con las propiedades si falta alguna
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            return JsonSerializer.Deserialize<List<ChatMessage>>(json, options) ?? new List<ChatMessage>();
+        }
+        catch (Exception)
+        {
+            // Si el JSON está corrupto por los cambios de modelo, devolvemos lista vacía
+            return new List<ChatMessage>();
+        }
     }
 
     private void SaveMessages(List<ChatMessage> messages)
@@ -89,7 +105,7 @@ public class ChatController : Controller
             var currentUser = allUsers.FirstOrDefault(u => u.user == user);
             string userPhotoUrl = currentUser?.photoUrl ?? "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
 
-            // 3. Crear el mensaje con las propiedades estrictamente existentes
+            // 3. Crear el mensaje
             var messages = GetMessages();
             var newMessage = new ChatMessage
             {
@@ -100,8 +116,10 @@ public class ChatController : Controller
                 ImageUrl = fileUrl,
                 ReplyToId = replyToId,
                 ReplyToUser = replyToUser,
-                ReplyToText = replyToText
-                // He eliminado 'Time' y 'Timestamp' porque no existen en tu clase
+                ReplyToText = replyToText,
+
+                // AGREGA ESTA LÍNEA (Asegúrate de que la propiedad exista en tu modelo ChatMessage)
+                Date = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")
             };
 
             messages.Add(newMessage);
