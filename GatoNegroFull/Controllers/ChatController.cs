@@ -62,40 +62,58 @@ public class ChatController : Controller
             bool isVideo = false;
 
             // 1. Subida de Archivos
+            // 1. Lógica de Archivos Inteligente
             if (imageFile != null && imageFile.Length > 0)
             {
-                double fileSizeMb = imageFile.Length / 1024.0 / 1024.0;
-                string extension = Path.GetExtension(imageFile.FileName).ToLower();
-                string[] videoExtensions = { ".mp4", ".mov", ".avi", ".wmv", ".mkv" };
-                isVideo = videoExtensions.Contains(extension);
+                string fileHash = CalculateHash(imageFile);
+                var resources = GetResources();
+                var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
 
-                if (fileSizeMb > 10)
+                if (existingResource != null)
                 {
-                    return Json(new { success = false, message = $"El archivo ({fileSizeMb:F1}MB) excede el límite de 10MB." });
-                }
-
-                using var stream = imageFile.OpenReadStream();
-
-                if (isVideo)
-                {
-                    var uploadParams = new VideoUploadParams()
-                    {
-                        File = new FileDescription(imageFile.FileName, stream),
-                        Folder = "chat_gato_negro"
-                    };
-                    var result = await _cloudinary.UploadAsync(uploadParams);
-                    fileUrl = result?.SecureUrl?.ToString();
+                    // YA EXISTE: No subimos nada, usamos la URL guardada
+                    fileUrl = existingResource.Url;
+                    existingResource.UseCount++;
+                    SaveResources(resources);
                 }
                 else
                 {
-                    var uploadParams = new ImageUploadParams()
+                    // NO EXISTE: Hay que subirlo a Cloudinary
+                    string extension = Path.GetExtension(imageFile.FileName).ToLower();
+                    isVideo = (new[] { ".mp4", ".mov", ".avi" }).Contains(extension);
+
+                    using var stream = imageFile.OpenReadStream();
+                    RawUploadResult result;
+
+                    if (isVideo)
                     {
-                        File = new FileDescription(imageFile.FileName, stream),
-                        Folder = "chat_gato_negro",
-                        Transformation = new Transformation().Quality("auto").FetchFormat("auto")
-                    };
-                    var result = await _cloudinary.UploadAsync(uploadParams);
+                        result = await _cloudinary.UploadAsync(new VideoUploadParams
+                        {
+                            File = new FileDescription(imageFile.FileName, stream),
+                            Folder = "chat_gato_negro"
+                        });
+                    }
+                    else
+                    {
+                        result = await _cloudinary.UploadAsync(new ImageUploadParams
+                        {
+                            File = new FileDescription(imageFile.FileName, stream),
+                            Folder = "chat_gato_negro",
+                            Transformation = new Transformation().Quality("auto").FetchFormat("auto")
+                        });
+                    }
+
                     fileUrl = result?.SecureUrl?.ToString();
+
+                    // Registrar el nuevo recurso
+                    resources.Add(new CloudinaryResource
+                    {
+                        Hash = fileHash,
+                        Url = fileUrl ?? "",
+                        PublicId = result?.PublicId ?? "",
+                        UseCount = 1
+                    });
+                    SaveResources(resources);
                 }
             }
 
@@ -160,10 +178,51 @@ public class ChatController : Controller
         var msg = messages.FirstOrDefault(m => m.Id == id);
         if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
+        // Verificación de autoridad
         if (msg.User == user || user == "Admin")
         {
+            if (!string.IsNullOrEmpty(msg.ImageUrl))
+            {
+                var resources = GetResources();
+                // Buscamos el recurso por URL
+                var res = resources.FirstOrDefault(r => r.Url == msg.ImageUrl);
+
+                if (res != null)
+                {
+                    res.UseCount--;
+
+                    if (res.UseCount <= 0)
+                    {
+                        // Determinar el tipo de recurso para el borrado correcto
+                        string extension = Path.GetExtension(res.Url).ToLower();
+                        bool isVideo = (new[] { ".mp4", ".mov", ".avi", ".mkv", ".webm" }).Contains(extension);
+
+                        var deletionParams = new DeletionParams(res.PublicId)
+                        {
+                            ResourceType = isVideo ? ResourceType.Video : ResourceType.Image
+                        };
+
+                        // ELIMINACIÓN FÍSICA EN CLOUDINARY
+                        var result = await _cloudinary.DestroyAsync(deletionParams);
+
+                        if (result.Result == "ok")
+                        {
+                            resources.Remove(res);
+                        }
+                        else
+                        {
+                            // Opcional: Loguear si el borrado falló pero igual remover de la auditoría 
+                            // para no intentar borrarlo siempre si ya no existe en la nube.
+                            resources.Remove(res);
+                        }
+                    }
+                    SaveResources(resources);
+                }
+            }
+
             messages.Remove(msg);
             SaveMessages(messages);
+
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
             return Json(new { success = true });
         }
@@ -223,5 +282,29 @@ public class ChatController : Controller
     {
         HttpContext.Session.Clear();
         return Json(new { success = true });
+    }
+
+    private readonly string _resourcesJsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "resources.json");
+
+    private List<CloudinaryResource> GetResources()
+    {
+        if (!System.IO.File.Exists(_resourcesJsonPath)) return new List<CloudinaryResource>();
+        var json = System.IO.File.ReadAllText(_resourcesJsonPath);
+        return JsonSerializer.Deserialize<List<CloudinaryResource>>(json) ?? new List<CloudinaryResource>();
+    }
+
+    private void SaveResources(List<CloudinaryResource> resources)
+    {
+        var json = JsonSerializer.Serialize(resources, new JsonSerializerOptions { WriteIndented = true });
+        System.IO.File.WriteAllText(_resourcesJsonPath, json);
+    }
+
+    // Método para calcular el HASH del archivo
+    private string CalculateHash(IFormFile file)
+    {
+        using var stream = file.OpenReadStream();
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(stream);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
 }
