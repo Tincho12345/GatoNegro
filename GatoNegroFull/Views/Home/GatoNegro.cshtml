@@ -171,7 +171,6 @@
     </div>
 </div>
 
-<!-- Modal de Login -->
 <div class="modal fade" id="loginModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
@@ -188,7 +187,8 @@
                     <label class="form-label small">Contraseña (ID)</label>
                     <div class="input-group">
                         <input type="password" id="loginPass" class="form-control form-control-sm border-end-0">
-                        <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" data-target="loginPass" style="border-color: #dee2e6;">
+                        <button class="btn btn-outline-secondary btn-sm" type="button"
+                                onclick="window.togglePassword('loginPass', this)" style="border-color: #dee2e6;">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
@@ -202,7 +202,6 @@
     </div>
 </div>
 
-<!-- Modal de Registro (Alta de Usuarios) Actualizado -->
 <div class="modal fade" id="registerModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
@@ -219,17 +218,16 @@
                     <label class="form-label small">Crea tu contraseña</label>
                     <div class="input-group">
                         <input type="password" id="regPass" class="form-control form-control-sm border-end-0" placeholder="Mínimo 4 caracteres">
-                        <button class="btn btn-outline-secondary btn-sm toggle-password" type="button" data-target="regPass" style="border-color: #dee2e6;">
+                        <button class="btn btn-outline-secondary btn-sm" type="button"
+                                onclick="window.togglePassword('regPass', this)" style="border-color: #dee2e6;">
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
                 </div>
-                <!-- NUEVO: Campo para Foto de Perfil -->
                 <div class="mb-3">
                     <label class="form-label small">Foto de perfil (Opcional)</label>
                     <input type="file" id="regPhoto" class="form-control form-control-sm" accept="image/*">
                 </div>
-
                 <div id="regError" class="text-danger x-small" style="display:none; font-size: 0.75rem;"></div>
             </div>
             <div class="modal-footer p-2">

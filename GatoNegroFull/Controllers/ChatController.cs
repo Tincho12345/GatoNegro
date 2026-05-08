@@ -13,12 +13,9 @@ public class ChatController : Controller
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly Cloudinary _cloudinary;
 
-    // Inyectamos IConfiguration para leer las credenciales de Cloudinary que pasaste
     public ChatController(IHubContext<ChatHub> hubContext, IConfiguration config)
     {
         _hubContext = hubContext;
-
-        // Configuración de Cloudinary usando tus datos de appsettings.json
         var account = new Account(
             config["Cloudinary:CloudName"],
             config["Cloudinary:ApiKey"],
@@ -27,7 +24,6 @@ public class ChatController : Controller
         _cloudinary = new Cloudinary(account);
     }
 
-    // --- MÉTODOS DE APOYO ---
     private List<ChatMessage> GetMessages()
     {
         if (!System.IO.File.Exists(_chatJsonPath)) return new List<ChatMessage>();
@@ -44,67 +40,82 @@ public class ChatController : Controller
     [HttpPost]
     public async Task<IActionResult> SaveMessage(string? text, string user, IFormFile? imageFile, string? replyToId, string? replyToUser, string? replyToText)
     {
-        var messages = GetMessages();
-        string? imageUrl = null;
-
-        // 1. Subida de imagen adjunta (si existe)
-        if (imageFile != null && imageFile.Length > 0)
-        {
-            try
-            {
-                using var stream = imageFile.OpenReadStream();
-                var uploadParams = new ImageUploadParams()
-                {
-                    File = new FileDescription(imageFile.FileName, stream),
-                    Folder = "chat_mensajes"
-                };
-                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                imageUrl = uploadResult?.SecureUrl?.ToString();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error en ChatController: " + ex.Message);
-            }
-        }
-
-        // --- NUEVA LÓGICA: Buscar la foto real del usuario ---
-        string userPhoto = "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
         try
         {
-            if (System.IO.File.Exists(_usersJsonPath))
+            string? fileUrl = null;
+            bool isVideo = false;
+
+            // 1. Subida de Archivos
+            if (imageFile != null && imageFile.Length > 0)
             {
-                var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
-                var users = JsonSerializer.Deserialize<List<UserData>>(usersJson);
-                // Buscamos el usuario por nombre para obtener su photoUrl
-                var foundUser = users?.FirstOrDefault(u => u.user == user);
-                if (foundUser != null && !string.IsNullOrEmpty(foundUser.photoUrl))
+                double fileSizeMb = imageFile.Length / 1024.0 / 1024.0;
+                string extension = Path.GetExtension(imageFile.FileName).ToLower();
+                string[] videoExtensions = { ".mp4", ".mov", ".avi", ".wmv", ".mkv" };
+                isVideo = videoExtensions.Contains(extension);
+
+                if (fileSizeMb > 10)
                 {
-                    userPhoto = foundUser.photoUrl;
+                    return Json(new { success = false, message = $"El archivo ({fileSizeMb:F1}MB) excede el límite de 10MB." });
+                }
+
+                using var stream = imageFile.OpenReadStream();
+
+                if (isVideo)
+                {
+                    var uploadParams = new VideoUploadParams()
+                    {
+                        File = new FileDescription(imageFile.FileName, stream),
+                        Folder = "chat_gato_negro"
+                    };
+                    var result = await _cloudinary.UploadAsync(uploadParams);
+                    fileUrl = result?.SecureUrl?.ToString();
+                }
+                else
+                {
+                    var uploadParams = new ImageUploadParams()
+                    {
+                        File = new FileDescription(imageFile.FileName, stream),
+                        Folder = "chat_gato_negro",
+                        Transformation = new Transformation().Quality("auto").FetchFormat("auto")
+                    };
+                    var result = await _cloudinary.UploadAsync(uploadParams);
+                    fileUrl = result?.SecureUrl?.ToString();
                 }
             }
+
+            // 2. Obtener datos de usuario para la foto (UserPhoto es requerida)
+            var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
+            var allUsers = JsonSerializer.Deserialize<List<UserData>>(usersJson) ?? new List<UserData>();
+            var currentUser = allUsers.FirstOrDefault(u => u.user == user);
+            string userPhotoUrl = currentUser?.photoUrl ?? "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
+
+            // 3. Crear el mensaje con las propiedades estrictamente existentes
+            var messages = GetMessages();
+            var newMessage = new ChatMessage
+            {
+                Id = Guid.NewGuid().ToString(),
+                User = user,
+                UserPhoto = userPhotoUrl,
+                Text = text ?? (fileUrl != null ? (isVideo ? "🎥 Video" : "📷 Imagen") : ""),
+                ImageUrl = fileUrl,
+                ReplyToId = replyToId,
+                ReplyToUser = replyToUser,
+                ReplyToText = replyToText
+                // He eliminado 'Time' y 'Timestamp' porque no existen en tu clase
+            };
+
+            messages.Add(newMessage);
+            SaveMessages(messages);
+
+            // 4. Notificar vía SignalR
+            await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
+
+            return Json(new { success = true });
         }
-        catch { /* Si falla algo, queda el avatar por defecto */ }
-        // ----------------------------------------------------
-
-        // 2. Creación del mensaje con la foto real del perfil
-        var newMessage = new ChatMessage
+        catch (Exception ex)
         {
-            Id = Guid.NewGuid().ToString(),
-            User = user ?? "Anónimo",
-            UserPhoto = userPhoto, // <-- AQUÍ usamos la foto encontrada
-            Text = text ?? "",
-            ImageUrl = imageUrl,
-            Date = DateTime.Now,
-            ReplyToId = replyToId,
-            ReplyToUser = replyToUser,
-            ReplyToText = replyToText
-        };
-
-        messages.Add(newMessage);
-        SaveMessages(messages);
-        await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
-
-        return Json(new { success = true });
+            return Json(new { success = false, message = "Error: " + ex.Message });
+        }
     }
 
     [HttpPost]
@@ -112,20 +123,15 @@ public class ChatController : Controller
     {
         var messages = GetMessages();
         var msg = messages.FirstOrDefault(m => m.Id == editId);
-
-        if (msg == null) return Json(new { success = false, message = "Mensaje no encontrado" });
+        if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
         if (msg.User == user || user == "Admin")
         {
             msg.Text = text;
             SaveMessages(messages);
-
-            // NOTIFICAR EN TIEMPO REAL
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
-
             return Json(new { success = true });
         }
-
         return Json(new { success = false, message = "No autorizado" });
     }
 
@@ -134,40 +140,27 @@ public class ChatController : Controller
     {
         var messages = GetMessages();
         var msg = messages.FirstOrDefault(m => m.Id == id);
-
         if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
         if (msg.User == user || user == "Admin")
         {
             messages.Remove(msg);
             SaveMessages(messages);
-
-            // NOTIFICAR EN TIEMPO REAL
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
-
             return Json(new { success = true });
         }
-
         return Json(new { success = false, message = "No autorizado" });
     }
 
     [HttpPost]
     public IActionResult SetSessionUser(string userName)
     {
-        try
-        {
-            HttpContext.Session.SetString("ChatUser", userName);
-            string role = (userName.ToLower() == "admin") ? "Admin" : "User";
-            HttpContext.Session.SetString("ChatRole", role);
-            return Json(new { success = true });
-        }
-        catch (Exception ex)
-        {
-            return Json(new { success = false, message = ex.Message });
-        }
+        HttpContext.Session.SetString("ChatUser", userName);
+        string role = (userName.ToLower() == "admin") ? "Admin" : "User";
+        HttpContext.Session.SetString("ChatRole", role);
+        return Json(new { success = true });
     }
 
-    // --- LÓGICA DE REGISTRO CON CLOUDINARY ---
     [HttpPost]
     public async Task<IActionResult> RegisterUser(string newUser, string newPass, IFormFile userPhoto)
     {
@@ -180,10 +173,8 @@ public class ChatController : Controller
         if (users.Any(u => u.user == newUser))
             return Json(new { success = false, message = "El usuario ya existe" });
 
-        // URL por defecto si no suben foto
         string uploadedImageUrl = "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
 
-        // Subida a Cloudinary
         if (userPhoto != null && userPhoto.Length > 0)
         {
             try
@@ -193,30 +184,26 @@ public class ChatController : Controller
                 {
                     File = new FileDescription(userPhoto.FileName, stream),
                     Folder = "perfiles_gato_negro",
-                    // Transformación: Forzamos que sea cuadrada y centrada en la cara
                     Transformation = new Transformation().Width(200).Height(200).Crop("fill").Gravity("face")
                 };
-
                 var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                uploadedImageUrl = uploadResult.SecureUrl.ToString();
+                uploadedImageUrl = uploadResult?.SecureUrl?.ToString() ?? uploadedImageUrl;
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error al subir imagen: " + ex.Message });
+                return Json(new { success = false, message = "Error en avatar: " + ex.Message });
             }
         }
 
-        // Agregamos el nuevo usuario con su URL de imagen
-        users.Add(new UserData
-        {
-            user = newUser,
-            pass = newPass,
-            role = "User",
-            photoUrl = uploadedImageUrl // Asegúrate de tener esta propiedad en tu clase UserData
-        });
-
+        users.Add(new UserData { user = newUser, pass = newPass, role = "User", photoUrl = uploadedImageUrl });
         System.IO.File.WriteAllText(_usersJsonPath, JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true }));
+        return Json(new { success = true });
+    }
 
+    [HttpPost]
+    public IActionResult Logout()
+    {
+        HttpContext.Session.Clear();
         return Json(new { success = true });
     }
 }

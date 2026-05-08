@@ -508,3 +508,25 @@ i[aria-hidden="true"] {
         transform: scale(1.2);
         color: #c85716 !important; /* Tu color de acento */
     }
+
+/* Estilo para los videos en el chat */
+.video-wrapper {
+    background-color: #000;
+    position: relative;
+    min-height: 150px;
+}
+
+    .video-wrapper video {
+        outline: none;
+    }
+
+    /* Spinner suave antes de que el video cargue (opcional) */
+    .video-wrapper::before {
+        content: "Cargando video...";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #555;
+        font-size: 0.8rem;
+    }

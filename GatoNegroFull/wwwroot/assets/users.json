@@ -4,5 +4,11 @@
     "pass": "Admin1234",
     "role": "Admin",
     "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg"
+  },
+  {
+    "user": "Tavo",
+    "pass": "AcaponesTavo",
+    "role": "User",
+    "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1778183761/perfiles_gato_negro/Captura1_gtm2hn.png"
   }
 ]

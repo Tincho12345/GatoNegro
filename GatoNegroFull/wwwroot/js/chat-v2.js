@@ -46,7 +46,7 @@
                         <i class="bi bi-paperclip" style="font-size: 1.2rem; transform: rotate(45deg);"></i>
                     </button>
 
-                    <input type="file" id="chatFile" style="display:none" accept="image/*" onchange="window.sendImage(this)">
+                    <input type="file" id="chatFile" style="display:none" accept="image/*,video/*" onchange="window.sendImage(this)">
 
                     <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-2 bg-transparent" 
                            placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
@@ -147,12 +147,21 @@
         try {
             const res = await fetch(url, { method: 'POST', body: formData });
             const data = await res.json();
+
             if (data.success) {
+                // --- CAMBIOS AQUÍ ---
+                input.value = ""; // Limpiar input inmediatamente
                 editingMsgId = null;
                 replyToId = null;
                 window.cancelReply();
+
+                // Forzar recarga local para no esperar a SignalR
+                await loadChatHistory();
+                // ---------------------
             }
-        } catch (err) { console.error("Error al enviar:", err); }
+        } catch (err) {
+            console.error("Error al enviar:", err);
+        }
     };
 
     window.deleteMessage = async (id) => {
@@ -178,21 +187,57 @@
         const file = input.files[0];
         const formData = new FormData();
         formData.append("user", getActiveUser());
-        formData.append("imageFile", file); // Enviamos el archivo
+        formData.append("imageFile", file);
 
-        // Mostramos un aviso de carga (opcional pero recomendado)
-        if (window.GlobalToast) {
-            window.GlobalToast.fire({ icon: 'info', title: 'Subiendo imagen...' });
-        }
+        // 1. Mostrar Spinner de carga bloqueante
+        let loadingSwal = Swal.fire({
+            title: 'Subiendo multimedia...',
+            html: 'Por favor, espera un momento.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
         try {
             const res = await fetch('/Chat/SaveMessage', { method: 'POST', body: formData });
             const data = await res.json();
+
+            // Cerrar el spinner
+            Swal.close();
+
             if (data.success) {
-                input.value = ""; // Limpiar el input file
+                // 1. Limpiar el input de archivo (importante para poder re-subir el mismo archivo)
+                input.value = "";
+
+                // 2. Cargar historial inmediatamente
+                await loadChatHistory();
+
+                // 3. Notificación visual rápida
+                if (window.GlobalToast) {
+                    window.GlobalToast.fire({
+                        icon: 'success',
+                        title: '¡Enviado!',
+                        timer: 1500 // Opcional: que desaparezca rápido
+                    });
+                }
+            } else {
+                // 2. Mostrar error específico del servidor (Tamaño, Cloudinary, etc.)
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo subir',
+                    text: data.message || 'Error desconocido al procesar el archivo.'
+                });
+                input.value = "";
             }
         } catch (err) {
-            console.error("Error al subir foto:", err);
+            Swal.close();
+            console.error("Error al subir:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Fallo de conexión',
+                text: 'Hubo un problema al contactar con el servidor.'
+            });
         }
     };
 
@@ -211,40 +256,60 @@
             if (!response.ok) return;
             const messages = await response.json();
 
-            // Guardar posición del scroll antes de renderizar
+            // 1. Detectar posición del scroll antes de limpiar el contenedor
             const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
 
             const currentUser = getActiveUser();
             const currentRole = getActiveRole();
+            const isLogged = currentRole !== "Visitante" && currentUser !== "Visitante";
 
+            // 2. Mapeo y renderizado de mensajes
             chatMessages.innerHTML = messages.map(m => {
                 const isMe = m.User === currentUser;
-                const canManage = (currentRole === "Admin") || (currentRole === "User" && isMe);
-                const canReply = currentRole !== "Visitante";
+                const canManage = isLogged && (currentRole === "Admin" || (currentRole === "User" && isMe));
+                const canReply = isLogged;
 
-                // Limpieza de texto para evitar errores en los atributos onclick
+                // Limpieza de texto para evitar errores en onclick
                 const cleanText = m.Text ? m.Text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
 
-                // --- CORRECCIÓN DEL AVATAR ---
-                // Si m.UserPhoto no existe o es un string vacío, usa el avatar por defecto
+                // Gestión de Avatar
                 const defaultAvatar = 'https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png';
                 const userImg = (m.UserPhoto && m.UserPhoto.trim() !== "") ? m.UserPhoto : defaultAvatar;
 
-                // Lógica para renderizar la imagen adjunta si existe
-                const imageHtml = m.ImageUrl
-                    ? `<img src="${m.ImageUrl}" class="img-fluid rounded mb-2 d-block shadow-sm" 
-                        style="max-height: 250px; cursor: pointer; object-fit: cover; width: 100%;" 
-                        onclick="window.open('${m.ImageUrl}', '_blank')">`
-                    : '';
+                // --- LÓGICA DE MULTIMEDIA (Imagen vs Video) ---
+                let mediaHtml = '';
+                if (m.ImageUrl) {
+                    const url = m.ImageUrl.toLowerCase();
+                    const isVideo = url.endsWith(".mp4") || url.endsWith(".webm") || url.endsWith(".ogg") || url.includes("video/upload");
+
+                    if (isVideo) {
+                        mediaHtml = `
+                        <div class="video-wrapper mb-2 shadow-sm rounded overflow-hidden">
+                            <video controls style="max-height: 250px; width: 100%; display: block; background: #000;">
+                                <source src="${m.ImageUrl}" type="video/mp4">
+                                Tu navegador no soporta el video.
+                            </video>
+                        </div>`;
+                    } else {
+                        mediaHtml = `
+                        <img src="${m.ImageUrl}" 
+                             class="img-fluid rounded mb-2 d-block shadow-sm" 
+                             style="max-height: 250px; cursor: pointer; object-fit: cover; width: 100%;" 
+                             onclick="window.open('${m.ImageUrl}', '_blank')">`;
+                    }
+                }
 
                 return `
                 <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"}">
                     ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
+                    
                     <div class="message-wrapper" style="max-width: 80%;">
                         <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                            <div class="d-flex justify-content-between align-items-start">
+                            
+                            <div class="d-flex justify-content-between align-items-start mb-1">
                                 <small style="color: #075E54; font-weight: bold; font-size: 0.75rem;">${m.User}</small>
-                                ${canReply || canManage ? `
+                                
+                                ${(canReply || canManage) ? `
                                 <div class="dropdown ms-2">
                                     <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown"></i>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
@@ -257,19 +322,36 @@
                                     </ul>
                                 </div>` : ''}
                             </div>
+
+                            ${/* Referencia a respuesta */
+                                m.ReplyToText ? `
+                                            <div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;">
+                                                <strong>${m.ReplyToUser}</strong><br>
+                                                <span class="text-truncate d-block">${m.ReplyToText}</span>
+                                            </div>` : ''
+                                }
+
+                            ${mediaHtml}
+
+                            <span style="word-break: break-word; font-size: 0.95rem;">${m.Text || ''}</span>
                             
-                            ${m.ReplyToText ? `<div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;"><strong>${m.ReplyToUser}</strong><br>${m.ReplyToText}</div>` : ''}
-                            
-                            ${imageHtml}
-                            
-                            <span style="word-break: break-word;">${m.Text || ''}</span>
+                            <div class="text-end" style="margin-top: -5px;">
+                                <small class="text-muted" style="font-size: 0.65rem;">
+                                    ${new Date(m.Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </small>
+                            </div>
                         </div>
                     </div>
+
                     ${isMe ? `<img src="${userImg}" class="rounded-circle ms-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd;">` : ''}
                 </div>`;
             }).join('');
 
-            if (isAtBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
+            // 3. Auto-scroll si el usuario estaba abajo
+            if (isAtBottom) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
         } catch (err) {
             console.error("Error al cargar historial:", err);
         }
@@ -277,18 +359,40 @@
 
     // --- SIGNALR ---
     const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
-    connection.on("ReceiveMessageUpdate", loadChatHistory);
+
+    connection.on("ReceiveMessageUpdate", () => {
+        // El delay de 200ms es la clave para que la imagen y el texto aparezcan siempre
+        setTimeout(() => {
+            loadChatHistory();
+        }, 200);
+    });
+
     connection.start().catch(err => console.error("SignalR Error: ", err));
 
     // --- EVENTOS ---
-    btnChat.addEventListener("click", () => { loadChatHistory(); chatModal.show(); });
+
+    // 1. Abrir chat
+    btnChat.addEventListener("click", () => {
+        loadChatHistory();
+        chatModal.show();
+    });
+
+    // 2. DETECTAR CIERRE DEL MODAL (Cerrar sesión automáticamente)
+    chatModalEl.addEventListener('hidden.bs.modal', () => {
+        console.log("Cerrando chat y deslogueando...");
+        logoutUser(); // Esta función ya la tienes definida al final de tu script
+    });
+
+    // 3. Abrir login manual
     btnLogin.addEventListener("click", () => loginModal.show());
 
+    // 4. Ir a registro desde login
     document.getElementById("btnGoRegister")?.addEventListener("click", () => {
         loginModal.hide();
         registerModal?.show();
     });
 
+    // 5. Ejecutar Login
     document.getElementById("btnDoLogin")?.addEventListener("click", async () => {
         const user = document.getElementById("loginUser")?.value.trim();
         const pass = document.getElementById("loginPass")?.value.trim();
@@ -305,6 +409,7 @@
         } catch (err) { console.error(err); }
     });
 
+    // 6. Ejecutar Registro
     document.getElementById("btnDoRegister")?.addEventListener("click", async () => {
         const user = document.getElementById("regUser")?.value.trim();
         const pass = document.getElementById("regPass")?.value.trim();
@@ -330,4 +435,41 @@
             }
         } catch (err) { console.error(err); }
     });
+
+    // --- FUNCIÓN MOSTRAR/OCULTAR CONTRASEÑA ---
+    window.togglePassword = (inputId, btnEl) => {
+        const passwordInput = document.getElementById(inputId);
+        // Buscamos el icono dentro del botón que recibió el click
+        const icon = btnEl.querySelector('i');
+
+        if (passwordInput && icon) {
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                passwordInput.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        }
+    };
+
+    async function logoutUser() {
+        // 1. Limpiar almacenamiento local
+        localStorage.removeItem("chatUser");
+        localStorage.removeItem("chatRole");
+
+        // 2. Limpiar sesión en el servidor
+        try {
+            await fetch('/Chat/Logout', { method: 'POST' });
+        } catch (err) {
+            console.error("Error al cerrar sesión en servidor:", err);
+        }
+
+        // 3. Opcional: Recargar la página para que C# detecte que "estaLogueado" es false
+        // y oculte los controles de envío en el próximo renderizado.
+        document.body.style.cursor = 'wait';
+        window.location.reload();
+    }
 })();
