@@ -62,12 +62,16 @@ public class ChatController : Controller
             bool isVideo = false;
 
             // 1. Subida de Archivos
-            // 1. Lógica de Archivos Inteligente
             if (imageFile != null && imageFile.Length > 0)
             {
                 string fileHash = CalculateHash(imageFile);
                 var resources = GetResources();
                 var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
+
+                // --- CORRECCIÓN: Mover la detección de extensión aquí arriba ---
+                string extension = Path.GetExtension(imageFile.FileName).ToLower();
+                isVideo = (new[] { ".mp4", ".mov", ".avi" }).Contains(extension);
+                // ---------------------------------------------------------------
 
                 if (existingResource != null)
                 {
@@ -79,9 +83,6 @@ public class ChatController : Controller
                 else
                 {
                     // NO EXISTE: Hay que subirlo a Cloudinary
-                    string extension = Path.GetExtension(imageFile.FileName).ToLower();
-                    isVideo = (new[] { ".mp4", ".mov", ".avi" }).Contains(extension);
-
                     using var stream = imageFile.OpenReadStream();
                     RawUploadResult result;
 

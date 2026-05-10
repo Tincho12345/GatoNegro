@@ -139,21 +139,21 @@
                         <div id="replyText" class="text-truncate small"></div>
                     </div>
 
-                    <div class="input-group bg-light rounded-pill border overflow-hidden" style="padding: 2px;">
-
+                    <div class="input-group bg-light rounded-pill border overflow-hidden w-100" style="padding: 2px;">
                         <button class="btn btn-light rounded-circle border-0 text-muted d-flex align-items-center justify-content-center"
-                                type="button"
-                                style="width: 35px; height: 35px; background: transparent;"
+                                type="button" style="width: 35px; height: 35px; background: transparent;"
                                 onclick="document.getElementById('chatFile').click()">
                             <i class="bi bi-paperclip" style="font-size: 1.2rem; transform: rotate(45deg);"></i>
                         </button>
+                        <input type="file" id="chatFile" style="display:none" accept="image/*,video/*" onchange="window.sendImage(this)">
 
-                        <input type="file" id="chatFile" style="display:none" accept="image/*" onchange="window.sendImage(this)">
+                        <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-2 bg-transparent"
+                               placeholder="Escribe un mensaje..." style="font-size: 0.9rem;" oninput="toggleSendIcon()">
 
-                        <input type="text" id="chatInput" class="form-control border-0 shadow-none ps-2 bg-transparent" placeholder="Escribe un mensaje..." style="font-size: 0.9rem;">
-
-                        <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" id="btnSend" type="button" style="width: 35px; height: 35px; margin: 2px;" onclick="sendMessage()">
-                            <i id="sendIcon" class="bi bi-send-fill" style="font-size: 0.8rem;"></i>
+                        <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center"
+                                id="btnSend" type="button" style="width: 35px; height: 35px; margin: 2px;"
+                                onclick="handleSendMessage()">
+                            <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 0.9rem;"></i>
                         </button>
                     </div>
                 }
@@ -244,14 +244,41 @@
         let CURRENT_USER = "@(userNameSession ?? "Visitante")";
         
         // Si C# dice que no está logueado, forzamos Visitante en localStorage
-        if("@estaLogueado" === "False"){
-             localStorage.setItem("chatUser", "Visitante");
-             CURRENT_USER = "Visitante";
-        } else {
-             localStorage.setItem("chatUser", CURRENT_USER);
+        @if (estaLogueado)
+        {
+                @* Contenedor principal para alinear los dos elementos *@
+                <div class="d-flex align-items-end gap-2 w-100 p-1">
+
+                    @* 1. El "Globo" Blanco del Input *@
+                    <div class="flex-grow-1 bg-white rounded-pill shadow-sm d-flex align-items-center px-2 py-1 border">
+                        @* Botón Emojis (opcional, pero da el look) *@
+                        <button class="btn btn-link text-muted p-1 border-0">
+                            <i class="bi bi-emoji-smile" style="font-size: 1.3rem;"></i>
+                        </button>
+
+                        <input type="text" id="chatInput"
+                               class="form-control border-0 shadow-none bg-transparent ps-2"
+                               placeholder="Escribe un mensaje..."
+                               style="font-size: 1rem;"
+                               oninput="toggleSendIcon()">
+
+                        @* Botón Clip *@
+                        <button class="btn btn-link text-muted p-1 border-0" onclick="document.getElementById('chatFile').click()">
+                            <i class="bi bi-paperclip" style="font-size: 1.3rem; transform: rotate(45deg);"></i>
+                        </button>
+                        <input type="file" id="chatFile" style="display:none" accept="image/*" onchange="window.sendImage(this)">
+                    </div>
+
+                    @* 2. El Botón Circular de Enviar/Micro *@
+                    <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                            id="btnSend" type="button"
+                            style="width: 48px; height: 48px; min-width: 48px;"
+                            onclick="handleSendMessage()">
+                        <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 1.2rem;"></i>
+                    </button>
+                </div>
         }
 
-        
         // Función para cancelar la edición o respuesta (Solo si existe el elemento)
         function cancelReply() {
             const preview = document.getElementById('replyPreview');
