@@ -28,12 +28,32 @@ async function loadChatHistory() {
             const defaultAvatar = 'https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png';
             const userImg = (m.UserPhoto && m.UserPhoto.trim() !== "") ? m.UserPhoto : defaultAvatar;
 
+            // --- NUEVA LÓGICA DE MEDIA CORREGIDA ---
             let mediaHtml = '';
+            let displayText = m.Text || ''; // Texto por defecto
+
             if (m.ImageUrl) {
                 const url = m.ImageUrl.toLowerCase();
-                const isVideo = url.endsWith(".mp4") || url.endsWith(".webm") || url.endsWith(".ogg") || url.includes("video/upload");
+                // Extensiones comunes de audio
+                const isAudio = url.endsWith(".webm") || url.endsWith(".mp3") || url.endsWith(".wav") || url.includes("audio/upload");
+                // Extensiones de video (excluyendo webm si prefieres tratarlo siempre como audio en notas de voz)
+                const isVideo = !isAudio && (url.endsWith(".mp4") || url.endsWith(".ogg") || url.includes("video/upload"));
 
-                if (isVideo) {
+                if (isAudio) {
+                    // 1. Renderizamos el reproductor de audio limpio
+                    mediaHtml = `
+                    <div class="audio-wrapper mb-2 py-1">
+                        <audio controls style="width: 100%; height: 40px;">
+                            <source src="${m.ImageUrl}" type="audio/webm">
+                            Tu navegador no soporta el audio.
+                        </audio>
+                    </div>`;
+
+                    // 2. Si es una nota de voz, ocultamos el texto descriptivo para que no se vea el string "🎤 Nota de voz"
+                    if (displayText.includes("Nota de voz")) {
+                        displayText = '';
+                    }
+                } else if (isVideo) {
                     mediaHtml = `
                     <div class="video-wrapper mb-2 shadow-sm rounded overflow-hidden" style="background: #000; position: relative;">
                         <video controls style="max-height: 250px; width: 100%; display: block;">
@@ -42,6 +62,7 @@ async function loadChatHistory() {
                         </video>
                     </div>`;
                 } else {
+                    // Imagen normal
                     mediaHtml = `
                     <img src="${m.ImageUrl}" 
                          loading="lazy" 
@@ -93,7 +114,7 @@ async function loadChatHistory() {
 
                         ${mediaHtml}
 
-                        <span style="word-break: break-word; font-size: 0.95rem; line-height: 1.4;">${m.Text || ''}</span>
+                        <span style="word-break: break-word; font-size: 0.95rem; line-height: 1.4;">${displayText}</span>
                         
                         <div class="text-end" style="margin-top: 2px; margin-bottom: -2px;">
                             <small class="text-muted" style="font-size: 0.65rem; font-weight: 500;">

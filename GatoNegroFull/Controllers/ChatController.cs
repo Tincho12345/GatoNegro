@@ -308,4 +308,83 @@ public class ChatController : Controller
         var hashBytes = sha256.ComputeHash(stream);
         return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
+
+    [HttpPost]
+    public async Task<IActionResult> SendAudio(IFormFile audioFile, string user)
+    {
+        if (audioFile == null || audioFile.Length == 0)
+            return Json(new { success = false, message = "Archivo de audio vacío" });
+
+        try
+        {
+            string? audioUrl = null;
+
+            // 1. Verificar si el audio ya existe (Auditoría de recursos)
+            string fileHash = CalculateHash(audioFile);
+            var resources = GetResources();
+            var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
+
+            if (existingResource != null)
+            {
+                audioUrl = existingResource.Url;
+                existingResource.UseCount++;
+                SaveResources(resources);
+            }
+            else
+            {
+                // 2. Subir a Cloudinary (los audios se suben como ResourceType.Video)
+                using var stream = audioFile.OpenReadStream();
+                var uploadParams = new VideoUploadParams()
+                {
+                    File = new FileDescription(audioFile.FileName, stream),
+                    Folder = "chat_audios",
+                    // Forzamos formato mp3 o m4a para compatibilidad
+                    Transformation = new Transformation().AudioCodec("mp3")
+                };
+
+                var result = await _cloudinary.UploadAsync(uploadParams);
+                audioUrl = result?.SecureUrl?.ToString();
+
+                // Registrar en resources.json
+                resources.Add(new CloudinaryResource
+                {
+                    Hash = fileHash,
+                    Url = audioUrl ?? "",
+                    PublicId = result?.PublicId ?? "",
+                    UseCount = 1
+                });
+                SaveResources(resources);
+            }
+
+            // 3. Obtener foto del usuario
+            var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
+            var allUsers = JsonSerializer.Deserialize<List<UserData>>(usersJson) ?? new List<UserData>();
+            var currentUser = allUsers.FirstOrDefault(u => u.user == user);
+            string userPhotoUrl = currentUser?.photoUrl ?? "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
+
+            // 4. Crear el mensaje de chat
+            var messages = GetMessages();
+            var newMessage = new ChatMessage
+            {
+                Id = Guid.NewGuid().ToString(),
+                User = user,
+                UserPhoto = userPhotoUrl,
+                Text = "🎤 Nota de voz",
+                ImageUrl = audioUrl, // Guardamos la URL del audio aquí
+                Date = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")
+            };
+
+            messages.Add(newMessage);
+            SaveMessages(messages);
+
+            // 5. Notificar a todos por SignalR
+            await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
+
+            return Json(new { success = true, url = audioUrl });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
 }

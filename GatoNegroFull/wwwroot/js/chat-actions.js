@@ -222,13 +222,30 @@ window.toggleSendIcon = () => {
     }
 };
 
-window.handleSendMessage = () => {
+/**
+ * REEMPLAZA TU window.handleSendMessage EN chat-actions.js POR ESTA:
+ */
+window.handleSendMessage = async () => {
     const input = document.getElementById("chatInput");
+    const icon = document.getElementById("sendIcon");
+
+    // 1. Si hay texto, enviamos mensaje normal (SignalR/Fetch)
     if (input.value.trim().length > 0) {
-        window.sendMessage(); // Ejecuta tu función de SignalR
-        setTimeout(() => window.toggleSendIcon(), 100); // Vuelve al micro tras enviar
-    } else {
-        // Lógica de micrófono (opcional)
-        console.log("Grabando...");
+        await window.sendMessage();
+        // Forzamos el icono de vuelta a micrófono después de enviar
+        if (icon) icon.className = "bi bi-mic-fill";
+    }
+    // 2. Si no hay texto, disparamos la lógica de audio del otro archivo
+    else {
+        if (typeof window.startRecording === "function" || typeof window.stopRecording === "function") {
+            // Esta variable 'isRecording' debe ser accesible o manejada globalmente
+            if (!window.isRecording) {
+                await window.startRecording();
+            } else {
+                await window.stopRecording();
+            }
+        } else {
+            console.warn("El módulo de voz (chat-voice.js) no está cargado.");
+        }
     }
 };

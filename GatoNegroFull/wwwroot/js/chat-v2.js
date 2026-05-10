@@ -26,30 +26,48 @@
                 </div>
                 <div id="replyText" class="text-truncate small"></div>
             </div>
+
             <div class="d-flex align-items-end gap-2 w-100 p-1">
+            
                 <div class="flex-grow-1 bg-white rounded-pill shadow-sm d-flex align-items-center px-2 py-1 border">
+                
                     <button class="btn btn-link text-muted p-1 border-0 shadow-none" type="button">
                         <i class="bi bi-emoji-smile" style="font-size: 1.3rem;"></i>
                     </button>
-                    <input type="text" id="chatInput" class="form-control border-0 shadow-none bg-transparent ps-1" 
-                           placeholder="Escribe un mensaje..." style="font-size: 1rem;" oninput="window.toggleSendIcon()">
+
+                    <input type="text" id="chatInput" 
+                           class="form-control border-0 shadow-none bg-transparent ps-1" 
+                           placeholder="Escribe un mensaje..." 
+                           style="font-size: 1rem;" 
+                           oninput="window.toggleSendIcon()">
+
                     <button class="btn btn-link text-muted p-1 border-0 shadow-none" type="button" onclick="document.getElementById('chatFile').click()">
                         <i class="bi bi-paperclip" style="font-size: 1.3rem; transform: rotate(45deg);"></i>
                     </button>
                     <input type="file" id="chatFile" style="display:none" accept="image/*,video/*" onchange="window.sendImage(this)">
                 </div>
+
                 <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
-                        id="btnSend" type="button" style="width: 45px; height: 45px; min-width: 45px;" onclick="window.handleSendMessage()">
-                    <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 1.1rem;"></i>
+                        id="btnSend" type="button" 
+                        style="width: 48px; height: 48px; min-width: 48px;" 
+                        onclick="window.handleSendMessage()">
+                    <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 1.2rem;"></i>
                 </button>
             </div>`;
 
+            // Evento para enviar con la tecla Enter
             const newInput = document.getElementById("chatInput");
             newInput?.addEventListener("keypress", (e) => {
-                if (e.key === "Enter") window.handleSendMessage();
+                if (e.key === "Enter") {
+                    // Evitamos el comportamiento por defecto si estamos grabando
+                    if (typeof isRecording !== 'undefined' && isRecording) {
+                        e.preventDefault();
+                    } else {
+                        window.handleSendMessage();
+                    }
+                }
             });
         }
-
         if (loginModal) loginModal.hide();
         if (registerModal) registerModal.hide();
 

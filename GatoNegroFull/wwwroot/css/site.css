@@ -554,3 +554,13 @@ input[type="search"]::-webkit-search-results-decoration {
     /* El !important asegura que pise el color sólido de SweetAlert */
     background: radial-gradient( circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.35) 0%, transparent 70% ) !important;
 }
+
+/* Quita el fondo negro de los audios en caso de que algún estilo global lo afecte */
+audio {
+    border-radius: 20px;
+    background-color: transparent;
+}
+/* Ajusta el ancho mínimo de la burbuja si solo hay audio */
+.message-wrapper:has(audio) {
+    min-width: 220px;
+}
