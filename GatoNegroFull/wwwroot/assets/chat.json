@@ -11,14 +11,36 @@
     "Date": "2026-05-10T10:44:43"
   },
   {
-    "Id": "a7ee9cdf-c0e1-4a39-8322-c100b3ba3c06",
+    "Id": "b9092c28-ea15-45c1-9a7e-ae01f24c2695",
     "User": "Admin",
     "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
-    "Text": "HOLA HOLA",
+    "Text": "\uD83D\uDCF7 Imagen",
+    "ImageUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1778588559/chat_gato_negro/descarga_d6ha7g.jpg",
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null,
+    "Date": "2026-05-12T09:17:54"
+  },
+  {
+    "Id": "e6a861e9-14d8-4df7-80f3-fa1c3ec7f8d1",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "hola",
+    "ImageUrl": null,
+    "ReplyToId": "b9092c28-ea15-45c1-9a7e-ae01f24c2695",
+    "ReplyToUser": "Admin",
+    "ReplyToText": "\uD83D\uDCF7 Imagen",
+    "Date": "2026-05-12T09:36:24"
+  },
+  {
+    "Id": "ce97591f-aff6-4b3f-afbb-53f0febc5905",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
+    "Text": "hola hola",
     "ImageUrl": null,
     "ReplyToId": null,
     "ReplyToUser": null,
     "ReplyToText": null,
-    "Date": "2026-05-10T11:00:14"
+    "Date": "2026-05-12T09:58:50"
   }
 ]

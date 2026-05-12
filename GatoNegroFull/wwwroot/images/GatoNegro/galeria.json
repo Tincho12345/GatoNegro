@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "Id": "2ef529db-0a74-4f9a-a33b-47ba220a9789",
+    "Nombre": "",
+    "ImagenUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1778502188/GatoNegro_Galeria/Captura_l4gqs9.png",
+    "PublicId": "GatoNegro_Galeria/Captura_l4gqs9"
+  },
+  {
+    "Id": "31597807-da92-419c-b0a9-67718806ee08",
+    "Nombre": "",
+    "ImagenUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1778502205/GatoNegro_Galeria/cualquiera_q3eztx.png",
+    "PublicId": "GatoNegro_Galeria/cualquiera_q3eztx"
+  }
+]

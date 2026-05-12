@@ -47,3 +47,7 @@ async function enviarIPVisita() {
     }
 }
 
+/**
+ * DISPARADOR: Se ejecuta automáticamente al cargar la página
+ */
+document.addEventListener("DOMContentLoaded", enviarIPVisita);

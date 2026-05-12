@@ -47,10 +47,12 @@
                     <input type="file" id="chatFile" style="display:none" accept="image/*,video/*" onchange="window.sendImage(this)">
                 </div>
 
-                <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
-                        id="btnSend" type="button" 
-                        style="width: 48px; height: 48px; min-width: 48px;" 
-                        onclick="window.handleSendMessage()">
+                <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                        id="btnSend" type="button"
+                        style="width: 48px; height: 48px; min-width: 48px; touch-action: none;"
+                        onpointerdown="window.handlePointerDown(event)"
+                        onpointerup="window.handlePointerUp(event)"
+                        oncontextmenu="return false;">
                     <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 1.2rem;"></i>
                 </button>
             </div>`;
@@ -59,8 +61,8 @@
             const newInput = document.getElementById("chatInput");
             newInput?.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") {
-                    // Evitamos el comportamiento por defecto si estamos grabando
-                    if (typeof isRecording !== 'undefined' && isRecording) {
+                    // Usamos window.isRecording para chequear el estado real
+                    if (window.isRecording) {
                         e.preventDefault();
                     } else {
                         window.handleSendMessage();

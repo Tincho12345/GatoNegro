@@ -87,11 +87,11 @@ async function loadChatHistory() {
                 
                 <div class="message-wrapper" style="max-width: 80%;">
                     <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative;">
-                        
+
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <small style="color: #075E54; font-weight: bold; font-size: 0.75rem;">${m.User}</small>
-                            
-                            ${(canReply || canManage) ? `
+    
+                            ${isLogged && (canReply || canManage) ? `
                             <div class="dropdown ms-2">
                                 <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown"></i>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">

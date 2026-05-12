@@ -2,9 +2,8 @@
 (function () {
     let mediaRecorder;
     let audioChunks = [];
-    window.isRecording = false; // La hacemos global para que otros scripts la lean
+    window.isRecording = false;
 
-    // Exponemos funciones de grabación al objeto window para que chat-actions las use
     window.startRecording = async function () {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -15,9 +14,9 @@
 
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                // ESTA LÍNEA ES LA QUE ENVÍA AL SOLTAR
                 await sendAudioToServer(audioBlob);
 
-                // Limpieza: cerramos el micrófono físicamente
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -26,20 +25,13 @@
             updateUI(true);
         } catch (err) {
             console.error("Error micrófono:", err);
-            // Si el usuario deniega el permiso o no hay micro
-            Swal.fire({
-                icon: 'error',
-                title: 'Micrófono no disponible',
-                text: 'Asegúrate de dar permisos de audio.',
-                background: '#1e1e2d',
-                color: '#fff'
-            });
+            window.isRecording = false;
         }
     };
 
     window.stopRecording = async function () {
-        if (mediaRecorder && window.isRecording) {
-            mediaRecorder.stop();
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop(); // Esto dispara el onstop de arriba automáticamente
             window.isRecording = false;
             updateUI(false);
         }
@@ -51,22 +43,20 @@
         const input = document.getElementById("chatInput");
 
         if (recording) {
+            btn.style.transform = "scale(1.2)";
             btn.classList.replace("btn-success", "btn-danger");
-            if (icon) icon.className = "bi bi-stop-fill"; // Cambia a icono de stop
-            input.placeholder = "Grabando audio...";
-            input.disabled = true;
+            if (icon) icon.className = "bi bi-stop-fill";
+            if (input) input.placeholder = "Grabando...";
         } else {
+            btn.style.transform = "scale(1)";
             btn.classList.replace("btn-danger", "btn-success");
             if (icon) icon.className = "bi bi-mic-fill";
-            input.placeholder = "Escribe un mensaje...";
-            input.disabled = false;
-            input.focus();
+            if (input) input.placeholder = "Escribe un mensaje...";
         }
     }
 
     async function sendAudioToServer(blob) {
         const formData = new FormData();
-        // Usamos .webm o .mp3 según lo que tu controller espere
         formData.append("audioFile", blob, `v_msg_${Date.now()}.webm`);
         formData.append("user", localStorage.getItem("chatUser") || "Visitante");
 
@@ -74,10 +64,7 @@
             const res = await fetch('/Chat/SendAudio', { method: 'POST', body: formData });
             const data = await res.json();
             if (data.success) {
-                // SignalR se encarga de avisar a los demás
-                console.log("Audio enviado");
-            } else {
-                console.error("Error de servidor:", data.message);
+                await window.loadChatHistory();
             }
         } catch (err) {
             console.error("Error enviando audio:", err);

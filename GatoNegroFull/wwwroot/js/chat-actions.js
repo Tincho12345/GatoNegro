@@ -1,10 +1,7 @@
-﻿/**
- * GatoNegroFull v2026 - Acciones Globales del Chat
- */
-
-// Variables de estado interno del módulo (compartidas por las funciones de este archivo)
-let replyToId = null;
+﻿let replyToId = null;
 let editingMsgId = null;
+let isRecording = false;
+window.isRecording = false;
 
 const getActiveUser = () => localStorage.getItem("chatUser") || "Visitante";
 
@@ -22,7 +19,7 @@ window.cancelReply = () => {
     const input = document.getElementById("chatInput");
     if (input) { input.value = ""; input.focus(); }
     const icon = document.getElementById("sendIcon");
-    if (icon) icon.className = "bi bi-send-fill";
+    if (icon) window.toggleSendIcon();
 };
 
 window.prepareReply = (id, user, text) => {
@@ -211,7 +208,6 @@ window.sendImage = async (input) => {
     }
 };
 
-// Detecta si hay texto para cambiar el icono
 window.toggleSendIcon = () => {
     const input = document.getElementById("chatInput");
     const icon = document.getElementById("sendIcon");
@@ -222,9 +218,6 @@ window.toggleSendIcon = () => {
     }
 };
 
-/**
- * REEMPLAZA TU window.handleSendMessage EN chat-actions.js POR ESTA:
- */
 window.handleSendMessage = async () => {
     const input = document.getElementById("chatInput");
     const icon = document.getElementById("sendIcon");
@@ -246,6 +239,64 @@ window.handleSendMessage = async () => {
             }
         } else {
             console.warn("El módulo de voz (chat-voice.js) no está cargado.");
+        }
+    }
+};
+
+window.handlePointerDown = (e) => {
+    const input = document.getElementById("chatInput");
+    // Si hay texto, el botón debe mandar texto, no grabar
+    if (input && input.value.trim().length > 0) return;
+
+    const btn = document.getElementById("btnSend");
+    btn.setPointerCapture(e.pointerId);
+
+    if (typeof window.startRecording === "function") {
+        window.isRecording = true; // Seteamos el estado global
+        window.startRecording();
+
+        // Feedback visual
+        btn.style.transform = "scale(1.2)";
+        btn.classList.replace("btn-success", "btn-danger");
+    }
+};
+
+window.handlePointerUp = async (e) => {
+    const btn = document.getElementById("btnSend");
+    const input = document.getElementById("chatInput");
+
+    // 1. Si hay texto escrito, enviar mensaje de texto normal
+    if (input && input.value.trim().length > 0) {
+        await window.handleSendMessage();
+        return;
+    }
+
+    // 2. Si estaba grabando, procesar el audio
+    if (window.isRecording) {
+        window.isRecording = false;
+        btn.style.transform = "scale(1)";
+        btn.classList.replace("btn-danger", "btn-success");
+
+        if (typeof window.stopRecording === "function") {
+            // Detenemos la grabación y obtenemos el Blob del audio
+            const audioBlob = await window.stopRecording();
+
+            if (audioBlob) {
+                const formData = new FormData();
+                formData.append("user", getActiveUser());
+                // Asegúrate de que el nombre del campo coincida con tu Backend (ej: 'audioFile')
+                formData.append("audioFile", audioBlob, "recording.webm");
+
+                try {
+                    const res = await fetch('/Chat/SaveMessage', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.success) {
+                        await window.loadChatHistory();
+                    }
+                } catch (err) {
+                    console.error("Error enviando audio:", err);
+                }
+            }
         }
     }
 };
