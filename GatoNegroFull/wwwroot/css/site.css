@@ -555,35 +555,96 @@ input[type="search"]::-webkit-search-results-decoration {
     background: radial-gradient( circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.35) 0%, transparent 70% ) !important;
 }
 
-/* Quita el fondo negro de los audios en caso de que algún estilo global lo afecte */
+/* =====================================================
+   11. SISTEMA DE CHAT (CORREGIDO)
+   ===================================================== */
+
+/* Contenedor principal de mensajes */
+#chatMessages {
+    padding: 10px;
+    overflow-y: auto;
+    /* CRÍTICO: Permite que el dropdown sobresalga lateralmente */
+    overflow-x: visible !important;
+}
+
+/* Burbuja de mensaje - Base */
+.message-wrapper {
+    position: relative;
+    z-index: 1; /* Valor inicial bajo */
+    transition: transform 0.1s ease-out;
+    touch-action: pan-y;
+    will-change: transform;
+    max-width: 80%;
+}
+
+    /* ELEVACIÓN DE CAPA: Si el menú está abierto, subimos la burbuja por encima de las demás */
+    .message-wrapper:has(.dropdown-menu.show) {
+        z-index: 9999 !important;
+    }
+
+    /* El globo del mensaje (el recuadro con color) */
+    .message-wrapper > div {
+        position: relative;
+        /* CRÍTICO: Evita que el borde redondeado o el fondo corten el menú */
+        overflow: visible !important;
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* Ajustes específicos para el Dropdown del Chat */
+    .message-wrapper .dropdown-menu {
+        position: absolute !important;
+        z-index: 10000 !important;
+        margin: 0;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        background-color: #ffffff !important; /* Forzamos blanco para legibilidad */
+    }
+
+/* Tema oscuro para el menú del chat */
+body.dark-theme .message-wrapper .dropdown-menu {
+    background-color: #2c2c2c !important;
+    color: #e0e0e0 !important;
+}
+
+/* --- AUDIOS Y MULTIMEDIA --- */
+
 audio {
     border-radius: 20px;
     background-color: transparent;
 }
-/* Ajusta el ancho mínimo de la burbuja si solo hay audio */
+
+/* Ajuste de ancho para audios */
+.message-wrapper:has(.audio-player-custom),
 .message-wrapper:has(audio) {
-    min-width: 220px;
+    min-width: 280px;
 }
 
-/* Contenedor del icono que aparece al deslizar */
+.progress-container:hover .progress-dot {
+    transform: translate(-50%, -50%) scale(1.2);
+    transition: transform 0.2s;
+}
+
+.audio-filename {
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- INDICADOR DE SLIDE (RESPONDER) --- */
+
 .swipe-reply-indicator {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     opacity: 0;
     transition: opacity 0.2s;
-    /* Quitamos el left fijo para que el JS lo maneje */
     display: flex;
     align-items: center;
     justify-content: center;
     width: 35px;
-    pointer-events: none; /* Para que no interfiera con el toque */
-}
-
-/* Clase para la animación suave del mensaje */
-.message-wrapper {
-    transition: transform 0.1s ease-out;
-    position: relative;
-    touch-action: pan-y;
-    will-change: transform; /* Mejora el rendimiento de la animación en móviles */
+    pointer-events: none;
 }
