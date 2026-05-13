@@ -568,18 +568,22 @@ audio {
 /* Contenedor del icono que aparece al deslizar */
 .swipe-reply-indicator {
     position: absolute;
-    left: -40px;
     top: 50%;
     transform: translateY(-50%);
     opacity: 0;
     transition: opacity 0.2s;
-    color: #075E54;
-    font-size: 1.5rem;
+    /* Quitamos el left fijo para que el JS lo maneje */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    pointer-events: none; /* Para que no interfiera con el toque */
 }
 
 /* Clase para la animación suave del mensaje */
 .message-wrapper {
     transition: transform 0.1s ease-out;
     position: relative;
-    touch-action: pan-y; /* Permite scroll vertical normal */
+    touch-action: pan-y;
+    will-change: transform; /* Mejora el rendimiento de la animación en móviles */
 }

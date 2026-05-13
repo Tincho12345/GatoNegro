@@ -151,37 +151,94 @@ async function loadChatHistory() {
 }
 
 /** 
- * LOGICA DE GESTOS (VA FUERA DE LA FUNCIÓN ASYNC)
+ * LOGICA DE GESTOS REFACTORIZADA
+ * Derecha: Responder | Izquierda: Eliminar (si tiene permisos)
  */
 let touchStartX = 0;
 let touchCurrentX = 0;
 
 window.handleTouchStart = function (e, element) {
     touchStartX = e.touches[0].clientX;
+    touchCurrentX = touchStartX; // Inicializar para evitar saltos
     element.style.transition = 'none';
 };
 
 window.handleTouchMove = function (e, element) {
     touchCurrentX = e.touches[0].clientX;
     let diff = touchCurrentX - touchStartX;
-    if (diff > 0 && diff < 100) {
-        element.style.transform = `translateX(${diff}px)`;
-        const indicator = element.querySelector('.swipe-reply-indicator');
-        if (indicator) indicator.style.opacity = diff > 30 ? (diff / 100) : '0';
+
+    // Limitamos el desplazamiento visual para que no se salga de la pantalla
+    if (Math.abs(diff) > 100) diff = diff > 0 ? 100 : -100;
+
+    element.style.transform = `translateX(${diff}px)`;
+    const indicator = element.querySelector('.swipe-reply-indicator');
+
+    if (indicator) {
+        indicator.style.opacity = Math.abs(diff) > 30 ? (Math.abs(diff) / 100) : '0';
+
+        if (diff > 0) {
+            // --- DERECHA: RESPONDER ---
+            indicator.innerHTML = '<i class="bi bi-reply-fill" style="font-size: 1.4rem; color: #075E54;"></i>';
+            indicator.style.left = '-35px';
+            indicator.style.right = 'auto';
+        } else {
+            // --- IZQUIERDA: ELIMINAR ---
+            indicator.innerHTML = '<i class="bi bi-trash-fill" style="font-size: 1.4rem; color: #dc3545;"></i>';
+            indicator.style.left = 'auto';
+            indicator.style.right = '-35px';
+        }
     }
 };
 
-window.handleTouchEnd = function (e, element, msgId, user, text) {
+window.handleTouchEnd = function (e, element, msgId, msgUser, text) {
     let diff = touchCurrentX - touchStartX;
+
+    // Recuperar info de sesión para validar permisos
+    const currentRole = localStorage.getItem("chatRole") || "Visitante";
+    const currentUser = localStorage.getItem("chatUser") || "Visitante";
+    const isLogged = localStorage.getItem("isLogged") === "true";
+
+    // 1. Acción: Responder (Derecha > 60px)
     if (diff > 60 && typeof window.prepareReply === 'function') {
-        window.prepareReply(msgId, user, text);
+        window.prepareReply(msgId, msgUser, text);
         if (navigator.vibrate) navigator.vibrate(15);
     }
+    // 2. Acción: Eliminar (Izquierda < -60px)
+    else if (diff < -60 && typeof window.deleteMessage === 'function') {
+        // Validación de permisos: Admin o dueño del mensaje
+        // 1. Recuperar info y limpiar espacios
+        const currentRole = (localStorage.getItem("chatRole") || "Visitante").trim();
+        const currentUser = (localStorage.getItem("chatUser") || "Visitante").trim();
+
+        // 2. Si el rol no es Visitante, asumimos que está logueado
+        const isLogged = currentRole !== "Visitante";
+
+        // 3. Lógica de permisos simplificada
+        const isMe = msgUser === currentUser;
+        const isAdmin = currentRole === "Admin";
+
+        // Un Admin SIEMPRE puede borrar, o el dueño si está logueado
+        const canDelete = isAdmin || (isLogged && isMe);
+
+        if (canDelete) {
+            window.deleteMessage(msgId);
+            if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
+        }
+    }
+
+    // Resetear visualmente el elemento
     element.style.transition = 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
     element.style.transform = `translateX(0px)`;
+
     const indicator = element.querySelector('.swipe-reply-indicator');
-    if (indicator) indicator.style.opacity = '0';
-    touchStartX = 0; touchCurrentX = 0;
+    if (indicator) {
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+        }, 300);
+    }
+
+    touchStartX = 0;
+    touchCurrentX = 0;
 };
 
 window.loadChatHistory = loadChatHistory;

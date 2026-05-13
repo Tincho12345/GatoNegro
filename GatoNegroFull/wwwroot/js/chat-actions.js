@@ -22,9 +22,6 @@ window.cancelReply = () => {
         if (replyText) replyText.innerText = "";
     }
 
-    // 2. Limpiar input (opcional, dependiendo de si querés borrar lo escrito al cancelar)
-    // Generalmente en WhatsApp cancelar la respuesta NO borra lo que estabas escribiendo.
-    // Si querés que NO se borre el texto, quitá la línea: input.value = "";
     if (chatInput) {
         // chatInput.value = ""; // <- Decidí si querés limpiar el texto o no
         chatInput.focus();
@@ -119,6 +116,11 @@ window.sendMessage = async () => {
 };
 
 window.deleteMessage = async (id) => {
+    // NUEVO: Si borramos el mensaje que estábamos editando o respondiendo, cancelamos la acción
+    if (editingMsgId === id || replyToId === id) {
+        window.cancelReply();
+    }
+
     const { isConfirmed } = await Swal.fire({
         title: '¿Eliminar mensaje?',
         text: "Esta acción no se puede deshacer",
@@ -158,6 +160,7 @@ window.deleteMessage = async (id) => {
         const data = await res.json();
 
         if (data.success) {
+            // Toast de éxito
             Swal.mixin({
                 toast: true,
                 position: 'center',
@@ -169,10 +172,12 @@ window.deleteMessage = async (id) => {
                 icon: 'success',
                 title: 'Mensaje eliminado'
             });
+
+            // Recargamos el historial para que desaparezca
             await window.loadChatHistory();
         }
     } catch (err) {
-        console.error(err);
+        console.error("Error al eliminar:", err);
     }
 };
 
