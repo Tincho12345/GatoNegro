@@ -80,17 +80,26 @@ async function loadChatHistory() {
                 minute: '2-digit',
                 hour12: false
             });
-
             return `
             <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"} animate__animated animate__fadeInUp animate__faster">
                 ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd; align-self: flex-end; margin-bottom: 5px;">` : ''}
-                
-                <div class="message-wrapper" style="max-width: 80%;">
+    
+                <div class="message-wrapper" 
+                     style="max-width: 80%; position: relative;"
+                     ontouchstart="handleTouchStart(event, this)" 
+                     ontouchmove="handleTouchMove(event, this)" 
+                     ontouchend="handleTouchEnd(event, this, '${m.Id}', '${m.User}', '${cleanText}')">
+        
+                    <!-- Indicador de respuesta (flechita tipo WhatsApp) -->
+                    <div class="swipe-reply-indicator" style="position: absolute; left: -35px; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s; color: #075E54;">
+                        <i class="bi bi-reply-fill" style="font-size: 1.4rem;"></i>
+                    </div>
+
                     <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative;">
 
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <small style="color: #075E54; font-weight: bold; font-size: 0.75rem;">${m.User}</small>
-    
+
                             ${isLogged && (canReply || canManage) ? `
                             <div class="dropdown ms-2">
                                 <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown"></i>
@@ -110,12 +119,12 @@ async function loadChatHistory() {
                                 <strong>${m.ReplyToUser}</strong><br>
                                 <span class="text-truncate d-block">${m.ReplyToText}</span>
                             </div>` : ''
-                }
+                            }
 
                         ${mediaHtml}
 
                         <span style="word-break: break-word; font-size: 0.95rem; line-height: 1.4;">${displayText}</span>
-                        
+            
                         <div class="text-end" style="margin-top: 2px; margin-bottom: -2px;">
                             <small class="text-muted" style="font-size: 0.65rem; font-weight: 500;">
                                 ${formattedTime}
@@ -126,6 +135,7 @@ async function loadChatHistory() {
 
                 ${isMe ? `<img src="${userImg}" class="rounded-circle ms-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd; align-self: flex-end; margin-bottom: 5px;">` : ''}
             </div>`;
+
         }).join('');
 
         // Gestión del Auto-Scroll con un pequeño delay para compensar el renderizado de multimedia
@@ -140,5 +150,38 @@ async function loadChatHistory() {
     }
 }
 
-// Hacerla disponible globalmente
+/** 
+ * LOGICA DE GESTOS (VA FUERA DE LA FUNCIÓN ASYNC)
+ */
+let touchStartX = 0;
+let touchCurrentX = 0;
+
+window.handleTouchStart = function (e, element) {
+    touchStartX = e.touches[0].clientX;
+    element.style.transition = 'none';
+};
+
+window.handleTouchMove = function (e, element) {
+    touchCurrentX = e.touches[0].clientX;
+    let diff = touchCurrentX - touchStartX;
+    if (diff > 0 && diff < 100) {
+        element.style.transform = `translateX(${diff}px)`;
+        const indicator = element.querySelector('.swipe-reply-indicator');
+        if (indicator) indicator.style.opacity = diff > 30 ? (diff / 100) : '0';
+    }
+};
+
+window.handleTouchEnd = function (e, element, msgId, user, text) {
+    let diff = touchCurrentX - touchStartX;
+    if (diff > 60 && typeof window.prepareReply === 'function') {
+        window.prepareReply(msgId, user, text);
+        if (navigator.vibrate) navigator.vibrate(15);
+    }
+    element.style.transition = 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+    element.style.transform = `translateX(0px)`;
+    const indicator = element.querySelector('.swipe-reply-indicator');
+    if (indicator) indicator.style.opacity = '0';
+    touchStartX = 0; touchCurrentX = 0;
+};
+
 window.loadChatHistory = loadChatHistory;

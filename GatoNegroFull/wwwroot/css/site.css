@@ -564,3 +564,22 @@ audio {
 .message-wrapper:has(audio) {
     min-width: 220px;
 }
+
+/* Contenedor del icono que aparece al deslizar */
+.swipe-reply-indicator {
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #075E54;
+    font-size: 1.5rem;
+}
+
+/* Clase para la animación suave del mensaje */
+.message-wrapper {
+    transition: transform 0.1s ease-out;
+    position: relative;
+    touch-action: pan-y; /* Permite scroll vertical normal */
+}

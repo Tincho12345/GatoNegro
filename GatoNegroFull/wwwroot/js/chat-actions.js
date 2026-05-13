@@ -8,7 +8,12 @@ const getActiveUser = () => localStorage.getItem("chatUser") || "Visitante";
 window.cancelReply = () => {
     replyToId = null;
     editingMsgId = null;
+
     const preview = document.getElementById("replyPreview");
+    const chatInput = document.getElementById("chatInput");
+    const icon = document.getElementById("sendIcon");
+
+    // 1. Ocultar y limpiar el panel de vista previa
     if (preview) {
         preview.style.display = "none";
         const replyUser = document.getElementById("replyUser");
@@ -16,22 +21,48 @@ window.cancelReply = () => {
         if (replyUser) replyUser.innerText = "";
         if (replyText) replyText.innerText = "";
     }
-    const input = document.getElementById("chatInput");
-    if (input) { input.value = ""; input.focus(); }
-    const icon = document.getElementById("sendIcon");
-    if (icon) window.toggleSendIcon();
+
+    // 2. Limpiar input (opcional, dependiendo de si querés borrar lo escrito al cancelar)
+    // Generalmente en WhatsApp cancelar la respuesta NO borra lo que estabas escribiendo.
+    // Si querés que NO se borre el texto, quitá la línea: input.value = "";
+    if (chatInput) {
+        // chatInput.value = ""; // <- Decidí si querés limpiar el texto o no
+        chatInput.focus();
+    }
+
+    // 3. Resetear el icono
+    // Si después de cancelar no hay texto, debe volver al micrófono
+    if (icon) {
+        if (chatInput && chatInput.value.trim().length > 0) {
+            icon.className = "bi bi-send-fill";
+        } else {
+            icon.className = "bi bi-mic-fill";
+        }
+    }
 };
 
 window.prepareReply = (id, user, text) => {
+    // 1. Limpiamos cualquier estado previo (edición o respuesta anterior)
     window.cancelReply();
+
     replyToId = id;
     const preview = document.getElementById("replyPreview");
+    const chatInput = document.getElementById("chatInput");
+    const icon = document.getElementById("sendIcon");
+
     if (preview) {
         document.getElementById("replyUser").innerText = user;
         document.getElementById("replyText").innerText = text;
         preview.style.display = "block";
     }
-    document.getElementById("chatInput")?.focus();
+
+    // 2. Al responder, el botón SIEMPRE debe ser el de enviar (avioncito)
+    // porque aunque no haya texto, la acción es "enviar respuesta"
+    if (icon) {
+        icon.className = "bi bi-send-fill";
+    }
+
+    chatInput?.focus();
 };
 
 window.prepareEdit = (id, text) => {
