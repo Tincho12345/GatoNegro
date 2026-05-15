@@ -1,2 +1,24 @@
 [
+  {
+    "Id": "11449ca2-01ed-4308-9477-90063ea61604",
+    "User": "Admin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776380664/2999d02e-fff8-4792-b62b-e4a8825875ca.png",
+    "Text": "hola",
+    "ImageUrl": null,
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null,
+    "Date": "2026-05-15T19:37:40"
+  },
+  {
+    "Id": "45fb52b4-6628-4a09-9598-3f8c4fa883cb",
+    "User": "Martin",
+    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1778881474/perfiles_gato_negro/MiPerfil_yygtaw.jpg",
+    "Text": "hola",
+    "ImageUrl": null,
+    "ReplyToId": null,
+    "ReplyToUser": null,
+    "ReplyToText": null,
+    "Date": "2026-05-15T19:38:18"
+  }
 ]

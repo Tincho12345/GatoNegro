@@ -93,8 +93,12 @@ async function loadChatHistory() {
                                 <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown" aria-expanded="false"></i>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="z-index: 10000; min-width: 150px; position: absolute;">
                                     ${canReply ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareReply('${m.Id}', '${m.User}', '${cleanText}')"><i class="bi bi-reply me-2"></i>Responder</a></li>` : ''}
+                                    
+                                    ${/* La opción de editar se condiciona estrictamente a que sea MI mensaje y no sea un audio */ ''}
+                                    ${isLogged && isMe && !isAudioMsg ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareEdit('${m.Id}', '${cleanText}')"><i class="bi bi-pencil me-2"></i>Editar</a></li>` : ''}
+                                    
+                                    ${/* Si es administrador o dueño, ve el separador y la opción de eliminar */ ''}
                                     ${canManage ? `
-                                        ${!isAudioMsg ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareEdit('${m.Id}', '${cleanText}')"><i class="bi bi-pencil me-2"></i>Editar</a></li>` : ''}
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMessage('${m.Id}')"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
                                     ` : ''}
