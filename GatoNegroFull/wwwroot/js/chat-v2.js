@@ -28,19 +28,15 @@
             </div>
 
             <div class="d-flex align-items-end gap-2 w-100 p-1">
-            
                 <div class="flex-grow-1 bg-white rounded-pill shadow-sm d-flex align-items-center px-2 py-1 border">
-                
                     <button class="btn btn-link text-muted p-1 border-0 shadow-none" type="button">
                         <i class="bi bi-emoji-smile" style="font-size: 1.3rem;"></i>
                     </button>
-
                     <input type="text" id="chatInput" 
                            class="form-control border-0 shadow-none bg-transparent ps-1" 
                            placeholder="Escribe un mensaje..." 
                            style="font-size: 1rem;" 
                            oninput="window.toggleSendIcon()">
-
                     <button class="btn btn-link text-muted p-1 border-0 shadow-none" type="button" onclick="document.getElementById('chatFile').click()">
                         <i class="bi bi-paperclip" style="font-size: 1.3rem; transform: rotate(45deg);"></i>
                     </button>
@@ -57,11 +53,9 @@
                 </button>
             </div>`;
 
-            // Evento para enviar con la tecla Enter
             const newInput = document.getElementById("chatInput");
             newInput?.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") {
-                    // Usamos window.isRecording para chequear el estado real
                     if (window.isRecording) {
                         e.preventDefault();
                     } else {
@@ -74,14 +68,13 @@
         if (registerModal) registerModal.hide();
 
         chatModal.show();
-        await window.loadChatHistory();
+        setTimeout(() => { window.loadChatHistory(); }, 200);
 
         if (typeof GlobalToast !== 'undefined') {
             GlobalToast.fire({ icon: 'success', title: `Bienvenido, ${user}` });
         }
     }
 
-    // --- OTROS MÉTODOS DE VENTANA ---
     window.showAddUserModal = () => {
         if (loginModal) loginModal.hide();
         if (registerModal) registerModal.show();
@@ -97,17 +90,15 @@
         }
     };
 
-    // --- SIGNALR ---
     const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
     connection.on("ReceiveMessageUpdate", () => {
-        setTimeout(() => { window.loadChatHistory(); }, 200);
+        setTimeout(() => { window.loadChatHistory(); }, 300);
     });
     connection.start().catch(err => console.error("SignalR Error: ", err));
 
-    // --- EVENTOS ---
     btnChat.addEventListener("click", () => {
-        window.loadChatHistory();
         chatModal.show();
+        setTimeout(() => { window.loadChatHistory(); }, 200);
     });
 
     chatModalEl.addEventListener('hidden.bs.modal', () => logoutUser());

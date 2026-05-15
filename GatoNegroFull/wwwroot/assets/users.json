@@ -3,6 +3,12 @@
     "user": "Admin",
     "pass": "Admin1234",
     "role": "Admin",
-    "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg"
+    "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776380664/2999d02e-fff8-4792-b62b-e4a8825875ca.png"
+  },
+  {
+    "user": "Martin",
+    "pass": "MiContrase\u00F1a1234",
+    "role": "User",
+    "photoUrl": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1778881474/perfiles_gato_negro/MiPerfil_yygtaw.jpg"
   }
 ]

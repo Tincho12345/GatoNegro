@@ -1,24 +1,2 @@
 [
-  {
-    "Id": "81b25744-245f-4f1e-9924-c8c937b8432a",
-    "User": "Admin",
-    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
-    "Text": "\uD83C\uDFA4 Nota de voz",
-    "ImageUrl": "https://res.cloudinary.com/dh1lvsawt/video/upload/v1778708044/chat_audios/v_msg_1778707757268_jpsvdp.webm",
-    "ReplyToId": null,
-    "ReplyToUser": null,
-    "ReplyToText": null,
-    "Date": "2026-05-13T18:29:19"
-  },
-  {
-    "Id": "6e97415f-8d25-48b7-b85c-17cb94af3ed9",
-    "User": "Admin",
-    "UserPhoto": "https://res.cloudinary.com/dh1lvsawt/image/upload/v1776830016/7af582c8-d76c-4e6d-9ca2-a977f8f64934.jpg",
-    "Text": "joya entenido",
-    "ImageUrl": null,
-    "ReplyToId": "81b25744-245f-4f1e-9924-c8c937b8432a",
-    "ReplyToUser": "Admin",
-    "ReplyToText": "\uD83C\uDFA4 Nota de voz",
-    "Date": "2026-05-13T18:49:54"
-  }
 ]

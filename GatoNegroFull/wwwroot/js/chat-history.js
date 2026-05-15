@@ -1,5 +1,5 @@
-﻿/** 
- * GatoNegroFull v2026 - Módulo de Renderizado de Historial
+﻿/** * GatoNegroFull v2026 - Módulo de Renderizado de Historial
+ * Archivo: chat-history.js
  */
 async function loadChatHistory() {
     const chatContainer = document.getElementById("chatContainer");
@@ -11,10 +11,11 @@ async function loadChatHistory() {
         if (!response.ok) return;
         const messages = await response.json();
 
+        // Determinar si el usuario ya está al final del chat antes de renderizar
         const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
 
-        const currentUser = localStorage.getItem("chatUser") || "Visitante";
-        const currentRole = localStorage.getItem("chatRole") || "Visitante";
+        const currentUser = (localStorage.getItem("chatUser") || "Visitante").trim();
+        const currentRole = (localStorage.getItem("chatRole") || "Visitante").trim();
         const isLogged = currentRole !== "Visitante" && currentUser !== "Visitante";
 
         chatMessages.innerHTML = messages.map(m => {
@@ -69,7 +70,7 @@ async function loadChatHistory() {
             const formattedTime = msgDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
             return `
-            <div class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"} animate__animated animate__fadeInUp animate__faster">
+            <div id="msg-${m.Id}" class="mb-3 d-flex ${isMe ? "justify-content-end" : "justify-content-start"} animate__animated animate__fadeInUp animate__faster">
                 ${!isMe ? `<img src="${userImg}" class="rounded-circle me-2" style="width:30px; height:30px; object-fit:cover; border: 1px solid #ddd; align-self: flex-end; margin-bottom: 5px;">` : ''}
 
                 <div class="message-wrapper" 
@@ -82,7 +83,6 @@ async function loadChatHistory() {
                         <i class="bi bi-reply-fill" style="font-size: 1.4rem;"></i>
                     </div>
 
-                    <!-- Ajuste Crítico: overflow visible y position relative -->
                     <div style="background: ${isMe ? '#dcf8c6' : '#ffffff'}; padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; overflow: visible;">
 
                         <div class="d-flex justify-content-between align-items-start mb-1">
@@ -91,7 +91,6 @@ async function loadChatHistory() {
                             ${isLogged && (canReply || canManage) ? `
                             <div class="dropdown ms-2">
                                 <i class="bi bi-three-dots-vertical text-muted" style="cursor:pointer; font-size: 0.8rem;" data-bs-toggle="dropdown" aria-expanded="false"></i>
-                                <!-- Ajuste Crítico: z-index altísimo y posicionamiento del menú -->
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="z-index: 10000; min-width: 150px; position: absolute;">
                                     ${canReply ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="prepareReply('${m.Id}', '${m.User}', '${cleanText}')"><i class="bi bi-reply me-2"></i>Responder</a></li>` : ''}
                                     ${canManage ? `
@@ -104,8 +103,8 @@ async function loadChatHistory() {
                         </div>
 
                         ${m.ReplyToText ? `
-                            <div style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px;">
-                                <strong>${m.ReplyToUser}</strong><br>
+                            <div onclick="scrollToMessage('msg-${m.ReplyToId}')" style="background: rgba(0,0,0,0.05); border-left: 3px solid #198754; padding: 4px 8px; margin-bottom: 5px; font-size: 0.85rem; border-radius: 4px; cursor: pointer;">
+                                <strong style="color: #198754; font-size: 0.7rem;">${m.ReplyToUser}</strong><br>
                                 <span class="text-truncate d-block">${m.ReplyToText}</span>
                             </div>` : ''
                 }
@@ -127,8 +126,32 @@ async function loadChatHistory() {
 
         }).join('');
 
+        // LÓGICA DE FOCO AUTOMÁTICO Y RESALTADO
         if (isAtBottom) {
-            setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 50);
+            requestAnimationFrame(() => {
+                const lastMessage = chatMessages.lastElementChild;
+                if (lastMessage) {
+                    // 1. Scroll suave hasta el final
+                    lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+                    // 2. Efecto de resaltado (Highlight)
+                    const bubble = lastMessage.querySelector('.message-wrapper > div');
+                    if (bubble) {
+                        const originalBg = bubble.style.background;
+                        const lastMsgData = messages[messages.length - 1];
+                        const isMeLast = lastMsgData && lastMsgData.User === currentUser;
+
+                        bubble.style.transition = 'background-color 0.5s ease';
+                        bubble.style.background = isMeLast ? '#c5e1a5' : '#fff9c4';
+
+                        setTimeout(() => {
+                            bubble.style.background = originalBg;
+                        }, 800);
+                    }
+                } else {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            });
         }
 
     } catch (err) {
@@ -136,24 +159,20 @@ async function loadChatHistory() {
     }
 }
 
-/** 
- * LOGICA DE GESTOS REFACTORIZADA
- * Derecha: Responder | Izquierda: Eliminar (si tiene permisos)
+/** * LOGICA DE GESTOS
  */
 let touchStartX = 0;
 let touchCurrentX = 0;
 
 window.handleTouchStart = function (e, element) {
     touchStartX = e.touches[0].clientX;
-    touchCurrentX = touchStartX; // Inicializar para evitar saltos
+    touchCurrentX = touchStartX;
     element.style.transition = 'none';
 };
 
 window.handleTouchMove = function (e, element) {
     touchCurrentX = e.touches[0].clientX;
     let diff = touchCurrentX - touchStartX;
-
-    // Limitamos el desplazamiento visual para que no se salga de la pantalla
     if (Math.abs(diff) > 100) diff = diff > 0 ? 100 : -100;
 
     element.style.transform = `translateX(${diff}px)`;
@@ -161,14 +180,11 @@ window.handleTouchMove = function (e, element) {
 
     if (indicator) {
         indicator.style.opacity = Math.abs(diff) > 30 ? (Math.abs(diff) / 100) : '0';
-
         if (diff > 0) {
-            // --- DERECHA: RESPONDER ---
             indicator.innerHTML = '<i class="bi bi-reply-fill" style="font-size: 1.4rem; color: #075E54;"></i>';
             indicator.style.left = '-35px';
             indicator.style.right = 'auto';
         } else {
-            // --- IZQUIERDA: ELIMINAR ---
             indicator.innerHTML = '<i class="bi bi-trash-fill" style="font-size: 1.4rem; color: #dc3545;"></i>';
             indicator.style.left = 'auto';
             indicator.style.right = '-35px';
@@ -178,32 +194,17 @@ window.handleTouchMove = function (e, element) {
 
 window.handleTouchEnd = function (e, element, msgId, msgUser, text) {
     let diff = touchCurrentX - touchStartX;
+    const currentRole = (localStorage.getItem("chatRole") || "Visitante").trim();
+    const currentUser = (localStorage.getItem("chatUser") || "Visitante").trim();
+    const isLogged = currentRole !== "Visitante";
 
-    // Recuperar info de sesión para validar permisos
-    const currentRole = localStorage.getItem("chatRole") || "Visitante";
-    const currentUser = localStorage.getItem("chatUser") || "Visitante";
-    const isLogged = localStorage.getItem("isLogged") === "true";
-
-    // 1. Acción: Responder (Derecha > 60px)
     if (diff > 60 && typeof window.prepareReply === 'function') {
         window.prepareReply(msgId, msgUser, text);
         if (navigator.vibrate) navigator.vibrate(15);
     }
-    // 2. Acción: Eliminar (Izquierda < -60px)
     else if (diff < -60 && typeof window.deleteMessage === 'function') {
-        // Validación de permisos: Admin o dueño del mensaje
-        // 1. Recuperar info y limpiar espacios
-        const currentRole = (localStorage.getItem("chatRole") || "Visitante").trim();
-        const currentUser = (localStorage.getItem("chatUser") || "Visitante").trim();
-
-        // 2. Si el rol no es Visitante, asumimos que está logueado
-        const isLogged = currentRole !== "Visitante";
-
-        // 3. Lógica de permisos simplificada
         const isMe = msgUser === currentUser;
         const isAdmin = currentRole === "Admin";
-
-        // Un Admin SIEMPRE puede borrar, o el dueño si está logueado
         const canDelete = isAdmin || (isLogged && isMe);
 
         if (canDelete) {
@@ -212,27 +213,38 @@ window.handleTouchEnd = function (e, element, msgId, msgUser, text) {
         }
     }
 
-    // Resetear visualmente el elemento
     element.style.transition = 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
     element.style.transform = `translateX(0px)`;
 
     const indicator = element.querySelector('.swipe-reply-indicator');
     if (indicator) {
-        setTimeout(() => {
-            indicator.style.opacity = '0';
-        }, 300);
+        setTimeout(() => { indicator.style.opacity = '0'; }, 300);
     }
-
     touchStartX = 0;
     touchCurrentX = 0;
+};
+
+/**
+ * UTILIDADES DE AUDIO Y SCROLL ESPECÍFICO
+ */
+window.scrollToMessage = function (targetId) {
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const bubble = targetElement.querySelector('.message-wrapper > div');
+        if (bubble) {
+            const originalBg = bubble.style.background;
+            bubble.style.transition = 'background-color 0.3s';
+            bubble.style.background = '#fff3cd';
+            setTimeout(() => { bubble.style.background = originalBg; }, 1000);
+        }
+    }
 };
 
 window.toggleAudio = function (id, btn) {
     const audio = document.getElementById(id);
     const icon = document.getElementById(`icon_${id}`);
-
     if (audio.paused) {
-        // Pausar otros audios si están sonando (opcional)
         document.querySelectorAll('audio').forEach(a => { if (a.id !== id) a.pause(); });
         audio.play();
         icon.classList.replace('bi-play-fill', 'bi-pause-fill');
@@ -247,13 +259,10 @@ window.updateAudioProgress = function (id) {
     const bar = document.getElementById(`bar_${id}`);
     const dot = document.getElementById(`dot_${id}`);
     const timeDisplay = document.getElementById(`time_${id}`);
-
     if (audio.duration) {
         const percent = (audio.currentTime / audio.duration) * 100;
         bar.style.width = percent + '%';
         dot.style.left = percent + '%';
-
-        // Formatear tiempo
         const mins = Math.floor(audio.currentTime / 60);
         const secs = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
         timeDisplay.innerText = `${mins}:${secs}`;
@@ -262,7 +271,7 @@ window.updateAudioProgress = function (id) {
 
 window.resetAudioIcon = function (id) {
     const icon = document.getElementById(`icon_${id}`);
-    icon.classList.replace('bi-pause-fill', 'bi-play-fill');
+    if (icon) icon.classList.replace('bi-pause-fill', 'bi-play-fill');
 };
 
 window.seekAudio = function (e, id) {
