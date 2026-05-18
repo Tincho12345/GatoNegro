@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Text.Json;
-using GatoNegroFull.Models;
+using WatsApp.Models;
 
-namespace GatoNegroFull.Controllers;
+namespace WatsApp.Controllers;
 
 public class HomeController(IWebHostEnvironment env) : Controller
 {

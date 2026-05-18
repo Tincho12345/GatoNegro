@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GatoNegroFull", "GatoNegroFull\GatoNegroFull.csproj", "{34D1AFFB-E8BA-43AE-97BD-FB8ADDEF0478}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WatsApp", "GatoNegroFull\WatsApp.csproj", "{34D1AFFB-E8BA-43AE-97BD-FB8ADDEF0478}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

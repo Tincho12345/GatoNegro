@@ -1,4 +1,4 @@
-﻿@model IEnumerable<GatoNegroFull.Models.Testimonio>
+﻿@model IEnumerable<WatsApp.Models.Testimonio>
 @using System.IO
 @using System.Text.Json
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
@@ -17,7 +17,7 @@
         companyId = HttpContextAccessor.HttpContext?.Session.GetString("CompanyId") ?? "";
     }
 
-    // Lógica de permisos para GatoNegroFull
+    // Lógica de permisos para WatsApp
     bool puedeEditar = true; // Mantengo tu hardcode original
     bool puedeVer = true;
 
@@ -27,14 +27,14 @@
 
     // 2. Carga de Galería desde JSON
     var galeriaJsonPath = System.IO.Path.Combine(Env.WebRootPath, "images", ImageFolder, "galeria.json");
-    List<GatoNegroFull.Models.Testimonio> listaGaleria = new();
+    List<WatsApp.Models.Testimonio> listaGaleria = new();
 
     if (System.IO.File.Exists(galeriaJsonPath))
     {
         try
         {
             var json = System.IO.File.ReadAllText(galeriaJsonPath);
-            listaGaleria = JsonSerializer.Deserialize<List<GatoNegroFull.Models.Testimonio>>(json) ?? new();
+            listaGaleria = JsonSerializer.Deserialize<List<WatsApp.Models.Testimonio>>(json) ?? new();
         }
         catch { /* Log error if necessary */ }
     }
@@ -46,7 +46,7 @@
     <partial name="Sections/_Hero" />
 
     @{
-        var modelVisible = new GatoNegroFull.Models.VisibleContentViewModel
+        var modelVisible = new WatsApp.Models.VisibleContentViewModel
         {
             PuedeEditar = puedeEditar,
             PuedeVer = puedeVer,

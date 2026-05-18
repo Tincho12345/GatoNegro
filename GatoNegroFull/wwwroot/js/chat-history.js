@@ -1,4 +1,4 @@
-﻿/** * GatoNegroFull v2026 - Módulo de Renderizado de Historial
+﻿/** * WatsApp v2026 - Módulo de Renderizado de Historial
  * Archivo: chat-history.js
  */
 async function loadChatHistory() {
@@ -7,7 +7,8 @@ async function loadChatHistory() {
     if (!chatMessages || !chatContainer) return;
 
     try {
-        const response = await fetch(`/assets/chat.json?v=${Date.now()}`);
+        //const response = await fetch(`/assets/chat.json?v=${Date.now()}`);
+        const response = await fetch(`/Chat/GetChatMessages?v=${Date.now()}`);
         if (!response.ok) return;
         const messages = await response.json();
 
@@ -24,7 +25,7 @@ async function loadChatHistory() {
             const canReply = isLogged;
 
             const cleanText = m.Text ? m.Text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
-            const defaultAvatar = 'https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png';
+            const defaultAvatar = 'https://res.cloudinary.com/dh1lvsawt/image/upload/v1776380642/da4be3be-3eb7-49e0-ab8b-a61094801c05.png';
             const userImg = (m.UserPhoto && m.UserPhoto.trim() !== "") ? m.UserPhoto : defaultAvatar;
 
             let mediaHtml = '';

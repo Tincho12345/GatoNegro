@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace GatoNegroFull.Hubs;
+namespace WatsApp.Hubs;
 
 public class ChatHub : Hub
 {

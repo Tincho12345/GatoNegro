@@ -1,9 +1,10 @@
-﻿using GatoNegroFull.Models;
-using GatoNegroFull.Repository;
+﻿using WatsApp.Models;
+using WatsApp.Repository;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
-namespace GatoNegroFull
+namespace WatsApp
 {
     public static class ServiceConfiguration
     {
@@ -18,7 +19,7 @@ namespace GatoNegroFull
 
             // 2. Clientes y Accesores
             services.AddHttpClient();
-            services.AddHttpContextAccessor(); // Limpio, sin duplicados
+            services.AddHttpContextAccessor();
 
             // 3. Seguridad y Cookies
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -44,6 +45,11 @@ namespace GatoNegroFull
 
             // 6. SignalR (Solo registro, no mapeo)
             services.AddSignalR();
+
+            // 7. Base de Datos - SQLite (Forzada a la raíz del proyecto)
+            string dbPath = Path.Combine(Directory.GetCurrentDirectory(), "chat.db");
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlite($"Data Source={dbPath}"));
         }
     }
 }

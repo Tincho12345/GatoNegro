@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
-using GatoNegroFull.Models;
+using WatsApp.Models;
 
-namespace GatoNegroFull.Mapper;
+namespace WatsApp.Mapper;
 
 public class MappingProfile : Profile
 {

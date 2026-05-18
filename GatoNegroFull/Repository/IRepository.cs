@@ -1,4 +1,4 @@
-﻿namespace GatoNegroFull.Repository;
+﻿namespace WatsApp.Repository;
 
 public interface IRepository<T> where T : class
 {

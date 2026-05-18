@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using GatoNegroFull.Controllers.Base;
-using GatoNegroFull.Models;
-using GatoNegroFull.Repository;
+using WatsApp.Controllers.Base;
+using WatsApp.Models;
+using WatsApp.Repository;
 
-namespace GatoNegroFull.Controllers;
+namespace WatsApp.Controllers;
 
 public class TestimonioController(IWebHostEnvironment env, IRepository<Testimonio> repo, IMapper mapper)
     : BaseController<Testimonio, TestimonioUploadDto>(env, repo, mapper, "GatoNegro_Testimonios", "Comentarios/comentarios.json")

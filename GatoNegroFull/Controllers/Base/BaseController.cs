@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using GatoNegroFull.Models;
-using GatoNegroFull.Repository;
+using WatsApp.Models;
+using WatsApp.Repository;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GatoNegroFull.Controllers.Base;
+namespace WatsApp.Controllers.Base;
 
 public abstract class BaseController<TEntity, TUploadDto> : Controller
     where TEntity : class, IEntity, new()

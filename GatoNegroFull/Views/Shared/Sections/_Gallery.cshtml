@@ -1,7 +1,7 @@
 ﻿@{
     var puedeVer = ViewData["puedeVer"] as bool? ?? false;
     var puedeEditar = ViewData["puedeEditar"] as bool? ?? false;
-    var listaObjetos = ViewData["listaObjetos"] as List<GatoNegroFull.Models.Testimonio> ?? new();
+    var listaObjetos = ViewData["listaObjetos"] as List<WatsApp.Models.Testimonio> ?? new();
 }
 
 @if (puedeVer && listaObjetos.Any())

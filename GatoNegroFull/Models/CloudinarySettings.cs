@@ -1,4 +1,4 @@
-﻿namespace GatoNegroFull.Models;
+﻿namespace WatsApp.Models;
 
 public class CloudinarySettings
 {

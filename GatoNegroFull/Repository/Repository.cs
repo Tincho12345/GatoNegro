@@ -1,10 +1,10 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using GatoNegroFull.Models;
+using WatsApp.Models;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
-namespace GatoNegroFull.Repository;
+namespace WatsApp.Repository;
 
 // Agregamos las restricciones: debe ser una clase, implementar IEntity y tener constructor vacío
 public class TestimonioRepository<T> : IRepository<T> where T : class, IEntity, new()

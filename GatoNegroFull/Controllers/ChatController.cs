@@ -1,21 +1,26 @@
-﻿using GatoNegroFull.Models;
-using GatoNegroFull.Hubs;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
+using WatsApp;
+using WatsApp.Hubs;
+using WatsApp.Models;
 
 public class ChatController : Controller
 {
-    private readonly string _chatJsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "chat.json");
-    private readonly string _usersJsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "users.json");
+    private readonly ApplicationDbContext _context;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly Cloudinary _cloudinary;
+    private readonly string _resourcesJsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "resources.json");
 
-    public ChatController(IHubContext<ChatHub> hubContext, IConfiguration config)
+    // 1. CONSTRUCTOR
+    public ChatController(IHubContext<ChatHub> hubContext, IConfiguration config, ApplicationDbContext context)
     {
         _hubContext = hubContext;
+        _context = context;
+
         var account = new Account(
             config["Cloudinary:CloudName"],
             config["Cloudinary:ApiKey"],
@@ -24,35 +29,34 @@ public class ChatController : Controller
         _cloudinary = new Cloudinary(account);
     }
 
-    private List<ChatMessage> GetMessages()
+    // ==========================================
+    // OBTENER MENSAJES (Para el Frontend)
+    // ==========================================
+    [HttpGet]
+    public async Task<IActionResult> GetChatMessages()
     {
         try
         {
-            if (!System.IO.File.Exists(_chatJsonPath)) return new List<ChatMessage>();
+            var mensajes = await _context.ChatMessages
+                                         .OrderBy(m => m.Date)
+                                         .ToListAsync();
 
-            var json = System.IO.File.ReadAllText(_chatJsonPath);
-
-            // Usamos una opción para que no sea tan estricto con las propiedades si falta alguna
             var options = new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true
+                PropertyNamingPolicy = null // Evita que C# convierta las propiedades a camelCase
             };
 
-            return JsonSerializer.Deserialize<List<ChatMessage>>(json, options) ?? new List<ChatMessage>();
+            return Json(mensajes, options);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Si el JSON está corrupto por los cambios de modelo, devolvemos lista vacía
-            return new List<ChatMessage>();
+            return Json(new { success = false, message = ex.Message });
         }
     }
 
-    private void SaveMessages(List<ChatMessage> messages)
-    {
-        var json = JsonSerializer.Serialize(messages, new JsonSerializerOptions { WriteIndented = true });
-        System.IO.File.WriteAllText(_chatJsonPath, json);
-    }
-
+    // ==========================================
+    // GUARDAR MENSAJE (Imágenes y Videos)
+    // ==========================================
     [HttpPost]
     public async Task<IActionResult> SaveMessage(string? text, string user, IFormFile? imageFile, string? replyToId, string? replyToUser, string? replyToText)
     {
@@ -61,28 +65,23 @@ public class ChatController : Controller
             string? fileUrl = null;
             bool isVideo = false;
 
-            // 1. Subida de Archivos
             if (imageFile != null && imageFile.Length > 0)
             {
                 string fileHash = CalculateHash(imageFile);
-                var resources = GetResources();
+                var resources = await GetResourcesAsync();
                 var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
 
-                // --- CORRECCIÓN: Mover la detección de extensión aquí arriba ---
                 string extension = Path.GetExtension(imageFile.FileName).ToLower();
                 isVideo = (new[] { ".mp4", ".mov", ".avi" }).Contains(extension);
-                // ---------------------------------------------------------------
 
                 if (existingResource != null)
                 {
-                    // YA EXISTE: No subimos nada, usamos la URL guardada
                     fileUrl = existingResource.Url;
                     existingResource.UseCount++;
-                    SaveResources(resources);
+                    await SaveResourcesAsync(resources);
                 }
                 else
                 {
-                    // NO EXISTE: Hay que subirlo a Cloudinary
                     using var stream = imageFile.OpenReadStream();
                     RawUploadResult result;
 
@@ -106,7 +105,6 @@ public class ChatController : Controller
 
                     fileUrl = result?.SecureUrl?.ToString();
 
-                    // Registrar el nuevo recurso
                     resources.Add(new CloudinaryResource
                     {
                         Hash = fileHash,
@@ -114,18 +112,14 @@ public class ChatController : Controller
                         PublicId = result?.PublicId ?? "",
                         UseCount = 1
                     });
-                    SaveResources(resources);
+                    await SaveResourcesAsync(resources);
                 }
             }
 
-            // 2. Obtener datos de usuario para la foto (UserPhoto es requerida)
-            var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
-            var allUsers = JsonSerializer.Deserialize<List<UserData>>(usersJson) ?? new List<UserData>();
-            var currentUser = allUsers.FirstOrDefault(u => u.user == user);
+            // Buscamos la foto de perfil real directo en SQLite
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.user == user);
             string userPhotoUrl = currentUser?.photoUrl ?? "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
 
-            // 3. Crear el mensaje
-            var messages = GetMessages();
             var newMessage = new ChatMessage
             {
                 Id = Guid.NewGuid().ToString(),
@@ -136,15 +130,12 @@ public class ChatController : Controller
                 ReplyToId = replyToId,
                 ReplyToUser = replyToUser,
                 ReplyToText = replyToText,
-
-                // AGREGA ESTA LÍNEA (Asegúrate de que la propiedad exista en tu modelo ChatMessage)
                 Date = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")
             };
 
-            messages.Add(newMessage);
-            SaveMessages(messages);
+            _context.ChatMessages.Add(newMessage);
+            await _context.SaveChangesAsync();
 
-            // 4. Notificar vía SignalR
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
 
             return Json(new { success = true });
@@ -155,37 +146,42 @@ public class ChatController : Controller
         }
     }
 
+    // ==========================================
+    // ACTUALIZAR / EDITAR MENSAJE
+    // ==========================================
     [HttpPost]
     public async Task<IActionResult> UpdateMessage(string editId, string text, string user)
     {
-        var messages = GetMessages();
-        var msg = messages.FirstOrDefault(m => m.Id == editId);
+        // Cambiado a FirstOrDefaultAsync para evitar bloqueos
+        var msg = await _context.ChatMessages.FirstOrDefaultAsync(m => m.Id == editId);
         if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
         if (msg.User == user || user == "Admin")
         {
             msg.Text = text;
-            SaveMessages(messages);
+            await _context.SaveChangesAsync();
+
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
             return Json(new { success = true });
         }
         return Json(new { success = false, message = "No autorizado" });
     }
 
+    // ==========================================
+    // ELIMINAR MENSAJE
+    // ==========================================
     [HttpPost]
     public async Task<IActionResult> DeleteMessage(string id, string user)
     {
-        var messages = GetMessages();
-        var msg = messages.FirstOrDefault(m => m.Id == id);
+        // Cambiado a FirstOrDefaultAsync
+        var msg = await _context.ChatMessages.FirstOrDefaultAsync(m => m.Id == id);
         if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
-        // Verificación de autoridad
         if (msg.User == user || user == "Admin")
         {
             if (!string.IsNullOrEmpty(msg.ImageUrl))
             {
-                var resources = GetResources();
-                // Buscamos el recurso por URL
+                var resources = await GetResourcesAsync();
                 var res = resources.FirstOrDefault(r => r.Url == msg.ImageUrl);
 
                 if (res != null)
@@ -194,7 +190,6 @@ public class ChatController : Controller
 
                     if (res.UseCount <= 0)
                     {
-                        // Determinar el tipo de recurso para el borrado correcto
                         string extension = Path.GetExtension(res.Url).ToLower();
                         bool isVideo = (new[] { ".mp4", ".mov", ".avi", ".mkv", ".webm" }).Contains(extension);
 
@@ -203,7 +198,6 @@ public class ChatController : Controller
                             ResourceType = isVideo ? ResourceType.Video : ResourceType.Image
                         };
 
-                        // ELIMINACIÓN FÍSICA EN CLOUDINARY
                         var result = await _cloudinary.DestroyAsync(deletionParams);
 
                         if (result.Result == "ok")
@@ -212,17 +206,15 @@ public class ChatController : Controller
                         }
                         else
                         {
-                            // Opcional: Loguear si el borrado falló pero igual remover de la auditoría 
-                            // para no intentar borrarlo siempre si ya no existe en la nube.
                             resources.Remove(res);
                         }
                     }
-                    SaveResources(resources);
+                    await SaveResourcesAsync(resources);
                 }
             }
 
-            messages.Remove(msg);
-            SaveMessages(messages);
+            _context.ChatMessages.Remove(msg);
+            await _context.SaveChangesAsync();
 
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
             return Json(new { success = true });
@@ -230,25 +222,41 @@ public class ChatController : Controller
         return Json(new { success = false, message = "No autorizado" });
     }
 
+    // ==========================================
+    // INICIAR SESIÓN (LOGIN)
+    // ==========================================
     [HttpPost]
-    public IActionResult SetSessionUser(string userName)
+    public async Task<IActionResult> SetSessionUser(string userName, string password)
     {
-        HttpContext.Session.SetString("ChatUser", userName);
-        string role = (userName.ToLower() == "admin") ? "Admin" : "User";
-        HttpContext.Session.SetString("ChatRole", role);
-        return Json(new { success = true });
+        if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
+        {
+            return Json(new { success = false, message = "Usuario y contraseña requeridos." });
+        }
+
+        var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.user == userName);
+
+        if (dbUser == null || dbUser.pass != password)
+        {
+            return Json(new { success = false, message = "Usuario o contraseña incorrectos." });
+        }
+
+        HttpContext.Session.SetString("ChatUser", dbUser.user);
+        HttpContext.Session.SetString("ChatRole", dbUser.role);
+
+        return Json(new { success = true, role = dbUser.role });
     }
 
+    // ==========================================
+    // REGISTRAR NUEVO USUARIO
+    // ==========================================
     [HttpPost]
-    public async Task<IActionResult> RegisterUser(string newUser, string newPass, IFormFile userPhoto)
+    public async Task<IActionResult> RegisterUser(string newUser, string newPass, IFormFile? userPhoto)
     {
         if (string.IsNullOrEmpty(newUser) || string.IsNullOrEmpty(newPass))
             return Json(new { success = false, message = "Datos incompletos" });
 
-        var json = System.IO.File.ReadAllText(_usersJsonPath);
-        var users = JsonSerializer.Deserialize<List<UserData>>(json) ?? new List<UserData>();
-
-        if (users.Any(u => u.user == newUser))
+        var userExists = await _context.Users.AnyAsync(u => u.user == newUser);
+        if (userExists)
             return Json(new { success = false, message = "El usuario ya existe" });
 
         string uploadedImageUrl = "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
@@ -273,11 +281,23 @@ public class ChatController : Controller
             }
         }
 
-        users.Add(new UserData { user = newUser, pass = newPass, role = "User", photoUrl = uploadedImageUrl });
-        System.IO.File.WriteAllText(_usersJsonPath, JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true }));
+        var newUserData = new UserData
+        {
+            user = newUser,
+            pass = newPass,
+            role = "User",
+            photoUrl = uploadedImageUrl
+        };
+
+        _context.Users.Add(newUserData);
+        await _context.SaveChangesAsync();
+
         return Json(new { success = true });
     }
 
+    // ==========================================
+    // CERRAR SESIÓN
+    // ==========================================
     [HttpPost]
     public IActionResult Logout()
     {
@@ -285,30 +305,9 @@ public class ChatController : Controller
         return Json(new { success = true });
     }
 
-    private readonly string _resourcesJsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "resources.json");
-
-    private List<CloudinaryResource> GetResources()
-    {
-        if (!System.IO.File.Exists(_resourcesJsonPath)) return new List<CloudinaryResource>();
-        var json = System.IO.File.ReadAllText(_resourcesJsonPath);
-        return JsonSerializer.Deserialize<List<CloudinaryResource>>(json) ?? new List<CloudinaryResource>();
-    }
-
-    private void SaveResources(List<CloudinaryResource> resources)
-    {
-        var json = JsonSerializer.Serialize(resources, new JsonSerializerOptions { WriteIndented = true });
-        System.IO.File.WriteAllText(_resourcesJsonPath, json);
-    }
-
-    // Método para calcular el HASH del archivo
-    private string CalculateHash(IFormFile file)
-    {
-        using var stream = file.OpenReadStream();
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hashBytes = sha256.ComputeHash(stream);
-        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-    }
-
+    // ==========================================
+    // ENVIAR AUDIO / NOTA DE VOZ
+    // ==========================================
     [HttpPost]
     public async Task<IActionResult> SendAudio(IFormFile audioFile, string user)
     {
@@ -318,34 +317,29 @@ public class ChatController : Controller
         try
         {
             string? audioUrl = null;
-
-            // 1. Verificar si el audio ya existe (Auditoría de recursos)
             string fileHash = CalculateHash(audioFile);
-            var resources = GetResources();
+            var resources = await GetResourcesAsync();
             var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
 
             if (existingResource != null)
             {
                 audioUrl = existingResource.Url;
                 existingResource.UseCount++;
-                SaveResources(resources);
+                await SaveResourcesAsync(resources);
             }
             else
             {
-                // 2. Subir a Cloudinary (los audios se suben como ResourceType.Video)
                 using var stream = audioFile.OpenReadStream();
                 var uploadParams = new VideoUploadParams()
                 {
                     File = new FileDescription(audioFile.FileName, stream),
                     Folder = "chat_audios",
-                    // Forzamos formato mp3 o m4a para compatibilidad
                     Transformation = new Transformation().AudioCodec("mp3")
                 };
 
                 var result = await _cloudinary.UploadAsync(uploadParams);
                 audioUrl = result?.SecureUrl?.ToString();
 
-                // Registrar en resources.json
                 resources.Add(new CloudinaryResource
                 {
                     Hash = fileHash,
@@ -353,31 +347,25 @@ public class ChatController : Controller
                     PublicId = result?.PublicId ?? "",
                     UseCount = 1
                 });
-                SaveResources(resources);
+                await SaveResourcesAsync(resources);
             }
 
-            // 3. Obtener foto del usuario
-            var usersJson = System.IO.File.ReadAllText(_usersJsonPath);
-            var allUsers = JsonSerializer.Deserialize<List<UserData>>(usersJson) ?? new List<UserData>();
-            var currentUser = allUsers.FirstOrDefault(u => u.user == user);
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.user == user);
             string userPhotoUrl = currentUser?.photoUrl ?? "https://res.cloudinary.com/dh1lvsawt/image/upload/v1/perfiles/default_avatar.png";
 
-            // 4. Crear el mensaje de chat
-            var messages = GetMessages();
             var newMessage = new ChatMessage
             {
                 Id = Guid.NewGuid().ToString(),
                 User = user,
                 UserPhoto = userPhotoUrl,
                 Text = "🎤 Nota de voz",
-                ImageUrl = audioUrl, // Guardamos la URL del audio aquí
+                ImageUrl = audioUrl,
                 Date = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")
             };
 
-            messages.Add(newMessage);
-            SaveMessages(messages);
+            _context.ChatMessages.Add(newMessage);
+            await _context.SaveChangesAsync();
 
-            // 5. Notificar a todos por SignalR
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
 
             return Json(new { success = true, url = audioUrl });
@@ -386,5 +374,29 @@ public class ChatController : Controller
         {
             return Json(new { success = false, message = ex.Message });
         }
+    }
+
+    // ==========================================
+    // MÉTODOS INTERNOS (Asíncronos)
+    // ==========================================
+    private async Task<List<CloudinaryResource>> GetResourcesAsync()
+    {
+        if (!System.IO.File.Exists(_resourcesJsonPath)) return new List<CloudinaryResource>();
+        var json = await System.IO.File.ReadAllTextAsync(_resourcesJsonPath);
+        return JsonSerializer.Deserialize<List<CloudinaryResource>>(json) ?? new List<CloudinaryResource>();
+    }
+
+    private async Task SaveResourcesAsync(List<CloudinaryResource> resources)
+    {
+        var json = JsonSerializer.Serialize(resources, new JsonSerializerOptions { WriteIndented = true });
+        await System.IO.File.WriteAllTextAsync(_resourcesJsonPath, json);
+    }
+
+    private string CalculateHash(IFormFile file)
+    {
+        using var stream = file.OpenReadStream();
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(stream);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
 }

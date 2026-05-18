@@ -14,7 +14,8 @@
     async function setupUserSession(user, role) {
         localStorage.setItem("chatUser", user);
         localStorage.setItem("chatRole", role || "User");
-        await fetch(`/Chat/SetSessionUser?userName=${user}`, { method: 'POST' });
+
+       /* await fetch(`/Chat/SetSessionUser?userName=${user}`, { method: 'POST' });*/
 
         const footer = document.querySelector("#chatModal .modal-footer");
         if (footer) {
@@ -114,15 +115,35 @@
         const user = document.getElementById("loginUser")?.value.trim();
         const pass = document.getElementById("loginPass")?.value.trim();
         const errorEl = document.getElementById("loginError");
+
+        if (!user || !pass) return;
+
+        // Preparamos los parámetros de forma segura para el controlador
+        const formData = new FormData();
+        formData.append("userName", user);
+        formData.append("password", pass);
+
         try {
-            const res = await fetch(`/assets/users.json?v=${Date.now()}`);
-            const users = await res.json();
-            const valid = users.find(u => u.user === user && u.pass === pass);
-            if (valid) {
+            // Hacemos la validación directa contra nuestro servidor y SQLite
+            const res = await fetch('/Chat/SetSessionUser', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
                 if (errorEl) errorEl.style.display = "none";
-                setupUserSession(user, valid.role);
-            } else if (errorEl) errorEl.style.display = "block";
-        } catch (err) { console.error(err); }
+                // Levantamos el rol real que nos devuelve el servidor o por defecto "User"
+                setupUserSession(user, data.role || "User");
+            } else {
+                if (errorEl) {
+                    errorEl.innerText = data.message || "Datos incorrectos";
+                    errorEl.style.display = "block";
+                }
+            }
+        } catch (err) {
+            console.error("Error en Login:", err);
+        }
     });
 
     document.getElementById("btnDoRegister")?.addEventListener("click", async () => {
