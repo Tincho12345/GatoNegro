@@ -13,7 +13,6 @@ public class ChatController : Controller
     private readonly ApplicationDbContext _context;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly Cloudinary _cloudinary;
-    private readonly string _resourcesJsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "resources.json");
 
     // 1. CONSTRUCTOR
     public ChatController(IHubContext<ChatHub> hubContext, IConfiguration config, ApplicationDbContext context)
@@ -68,8 +67,9 @@ public class ChatController : Controller
             if (imageFile != null && imageFile.Length > 0)
             {
                 string fileHash = CalculateHash(imageFile);
-                var resources = await GetResourcesAsync();
-                var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
+
+                // CAMBIO: Buscamos el recurso directamente en la tabla SQLite
+                var existingResource = await _context.CloudinaryResources.FirstOrDefaultAsync(r => r.Hash == fileHash);
 
                 string extension = Path.GetExtension(imageFile.FileName).ToLower();
                 isVideo = (new[] { ".mp4", ".mov", ".avi" }).Contains(extension);
@@ -78,7 +78,7 @@ public class ChatController : Controller
                 {
                     fileUrl = existingResource.Url;
                     existingResource.UseCount++;
-                    await SaveResourcesAsync(resources);
+                    _context.CloudinaryResources.Update(existingResource);
                 }
                 else
                 {
@@ -105,14 +105,15 @@ public class ChatController : Controller
 
                     fileUrl = result?.SecureUrl?.ToString();
 
-                    resources.Add(new CloudinaryResource
+                    // CAMBIO: Agregamos el nuevo recurso a la tabla SQLite
+                    var newResource = new CloudinaryResource
                     {
                         Hash = fileHash,
                         Url = fileUrl ?? "",
                         PublicId = result?.PublicId ?? "",
                         UseCount = 1
-                    });
-                    await SaveResourcesAsync(resources);
+                    };
+                    _context.CloudinaryResources.Add(newResource);
                 }
             }
 
@@ -134,6 +135,8 @@ public class ChatController : Controller
             };
 
             _context.ChatMessages.Add(newMessage);
+
+            // Un solo SaveChangesAsync guarda el mensaje y actualiza/crea el recurso en CloudinaryResources
             await _context.SaveChangesAsync();
 
             await _hubContext.Clients.All.SendAsync("ReceiveMessageUpdate");
@@ -152,7 +155,6 @@ public class ChatController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateMessage(string editId, string text, string user)
     {
-        // Cambiado a FirstOrDefaultAsync para evitar bloqueos
         var msg = await _context.ChatMessages.FirstOrDefaultAsync(m => m.Id == editId);
         if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
@@ -173,7 +175,6 @@ public class ChatController : Controller
     [HttpPost]
     public async Task<IActionResult> DeleteMessage(string id, string user)
     {
-        // Cambiado a FirstOrDefaultAsync
         var msg = await _context.ChatMessages.FirstOrDefaultAsync(m => m.Id == id);
         if (msg == null) return Json(new { success = false, message = "No encontrado" });
 
@@ -181,8 +182,8 @@ public class ChatController : Controller
         {
             if (!string.IsNullOrEmpty(msg.ImageUrl))
             {
-                var resources = await GetResourcesAsync();
-                var res = resources.FirstOrDefault(r => r.Url == msg.ImageUrl);
+                // CAMBIO: Buscamos el recurso en SQLite en vez del JSON
+                var res = await _context.CloudinaryResources.FirstOrDefaultAsync(r => r.Url == msg.ImageUrl);
 
                 if (res != null)
                 {
@@ -200,16 +201,13 @@ public class ChatController : Controller
 
                         var result = await _cloudinary.DestroyAsync(deletionParams);
 
-                        if (result.Result == "ok")
-                        {
-                            resources.Remove(res);
-                        }
-                        else
-                        {
-                            resources.Remove(res);
-                        }
+                        // Si se borró de Cloudinary con éxito o dio algún aviso, lo removemos de SQLite
+                        _context.CloudinaryResources.Remove(res);
                     }
-                    await SaveResourcesAsync(resources);
+                    else
+                    {
+                        _context.CloudinaryResources.Update(res);
+                    }
                 }
             }
 
@@ -318,14 +316,15 @@ public class ChatController : Controller
         {
             string? audioUrl = null;
             string fileHash = CalculateHash(audioFile);
-            var resources = await GetResourcesAsync();
-            var existingResource = resources.FirstOrDefault(r => r.Hash == fileHash);
+
+            // CAMBIO: Buscamos el audio en SQLite
+            var existingResource = await _context.CloudinaryResources.FirstOrDefaultAsync(r => r.Hash == fileHash);
 
             if (existingResource != null)
             {
                 audioUrl = existingResource.Url;
                 existingResource.UseCount++;
-                await SaveResourcesAsync(resources);
+                _context.CloudinaryResources.Update(existingResource);
             }
             else
             {
@@ -340,14 +339,15 @@ public class ChatController : Controller
                 var result = await _cloudinary.UploadAsync(uploadParams);
                 audioUrl = result?.SecureUrl?.ToString();
 
-                resources.Add(new CloudinaryResource
+                // CAMBIO: Agregamos el nuevo audio a SQLite
+                var newResource = new CloudinaryResource
                 {
                     Hash = fileHash,
                     Url = audioUrl ?? "",
                     PublicId = result?.PublicId ?? "",
                     UseCount = 1
-                });
-                await SaveResourcesAsync(resources);
+                };
+                _context.CloudinaryResources.Add(newResource);
             }
 
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.user == user);
@@ -377,21 +377,8 @@ public class ChatController : Controller
     }
 
     // ==========================================
-    // MÉTODOS INTERNOS (Asíncronos)
+    // MÉTODOS INTERNOS
     // ==========================================
-    private async Task<List<CloudinaryResource>> GetResourcesAsync()
-    {
-        if (!System.IO.File.Exists(_resourcesJsonPath)) return new List<CloudinaryResource>();
-        var json = await System.IO.File.ReadAllTextAsync(_resourcesJsonPath);
-        return JsonSerializer.Deserialize<List<CloudinaryResource>>(json) ?? new List<CloudinaryResource>();
-    }
-
-    private async Task SaveResourcesAsync(List<CloudinaryResource> resources)
-    {
-        var json = JsonSerializer.Serialize(resources, new JsonSerializerOptions { WriteIndented = true });
-        await System.IO.File.WriteAllTextAsync(_resourcesJsonPath, json);
-    }
-
     private string CalculateHash(IFormFile file)
     {
         using var stream = file.OpenReadStream();

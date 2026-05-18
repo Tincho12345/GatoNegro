@@ -12,4 +12,5 @@ public class ApplicationDbContext : DbContext
     // Esta va a ser tu tabla de mensajes en la base de datos SQLite
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<UserData> Users { get; set; }
+    public DbSet<CloudinaryResource> CloudinaryResources { get; set; }
 }
