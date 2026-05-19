@@ -649,11 +649,52 @@ audio {
     pointer-events: none;
 }
 
-/* Forzar que el selector de emojis flote siempre por encima de cualquier capa de modal de Bootstrap */
+/* Forzar que el selector de emojis flote siempre por encima de cualquier capa, burbuja o audio */
 .emoji-picker,
 [data-emoji-picker] {
-    z-index: 9999 !important;
+    z-index: 99999 !important;
     position: fixed !important;
-    box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2) !important;
-    border-radius: 10px !important;
+    box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 12px !important;
+    transform: translateY(-102%) translateX(5px) !important;
+}
+
+    /* CORRECCIÓN DEFINITIVA PARA LA CARITA DE PREVISUALIZACIÓN RECORTADA:
+   Forzamos a que la sección inferior de preview de la librería tenga altura automática,
+   visibilidad completa y desactive los límites rígidos que muerden el dibujo de la carita.
+*/
+    .emoji-picker__preview,
+    .emoji-picker__preview-container,
+    [data-emoji-picker] [class*="preview"],
+    [data-emoji-picker] [class*="footer"] {
+        height: auto !important;
+        min-height: 55px !important; /* Asegura espacio suficiente para el emoji y el texto */
+        overflow: visible !important; /* Evita que el borde redondeado o un contenedor padre corte la carita */
+        padding-bottom: 6px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Ajuste específico para la imagen/emoji dentro de la previsualización inferior */
+    .emoji-picker__preview-emoji,
+    [data-emoji-picker] [class*="preview-emoji"] {
+        font-size: 2rem !important; /* Normaliza el tamaño del emoji para que no desborde */
+        line-height: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* Si el problema es el contenedor de scroll de los emojis que se pisa con el footer,
+   le damos un respiro al final de la lista.
+*/
+    .emoji-picker__emojis,
+    [data-emoji-picker] .emoji-picker__container {
+        padding-bottom: 10px !important;
+    }
+
+/* ¡ESTA REGLA EVITA QUE LAS BURBUJAS TAPEN EL PICKER! */
+#chatMessages,
+.chat-messages-container,
+#chatModal .modal-body {
+    isolation: isolate !important;
+    position: relative !important;
 }

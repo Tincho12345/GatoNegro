@@ -186,6 +186,7 @@
 
     // Instancia global para que no se duplique
     let emojiPickerInstance = null;
+
     window.inicializarSelectorEmojis = function () {
         const chatModalEl = document.getElementById("chatModal");
         const input = document.getElementById('chatInput');
@@ -195,8 +196,8 @@
 
         emojiPickerInstance = new EmojiButton({
             position: 'top-start',
-            rootElement: chatModalEl,
-            autoHide: true,
+            rootElement: chatModalEl, // VOLVEMOS A AGREGAR ESTO: Evita el colapso de focustrap.js
+            autoHide: false,
             i18n: {
                 search: 'Buscar emoji',
                 categories: {
@@ -217,14 +218,11 @@
         emojiPickerInstance.on('emoji', selection => {
             const currentInput = document.getElementById('chatInput');
             if (currentInput) {
-                // CORRECCIÓN: Si 'selection' es un objeto usa su propiedad .emoji, 
-                // de lo contrario, lo toma como el string directo (comportamiento de v3).
                 const emojiFinal = (typeof selection === 'object' && selection.emoji) ? selection.emoji : selection;
 
                 currentInput.value += emojiFinal;
                 currentInput.focus();
 
-                // Cambiar el ícono del botón de enviar (micrófono -> avión)
                 if (typeof window.toggleSendIcon === 'function') {
                     window.toggleSendIcon();
                 } else if (typeof toggleSendIcon === 'function') {
@@ -241,6 +239,16 @@
         }
 
         if (emojiPickerInstance) {
+            // Desactivar la restricción de foco de Bootstrap por seguridad mutua
+            const chatModalEl = document.getElementById("chatModal");
+            if (chatModalEl) {
+                const modalInstance = bootstrap.Modal.getInstance(chatModalEl);
+                if (modalInstance && modalInstance._config) {
+                    modalInstance._config.focus = false;
+                    modalInstance._config.enforceFocus = false;
+                }
+            }
+
             emojiPickerInstance.togglePicker(buttonElement);
         } else {
             console.error("La librería EmojiButton aún no ha cargado desde el CDN.");
