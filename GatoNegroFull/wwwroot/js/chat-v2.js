@@ -15,8 +15,6 @@
         localStorage.setItem("chatUser", user);
         localStorage.setItem("chatRole", role || "User");
 
-       /* await fetch(`/Chat/SetSessionUser?userName=${user}`, { method: 'POST' });*/
-
         const footer = document.querySelector("#chatModal .modal-footer");
         if (footer) {
             footer.innerHTML = `
@@ -30,7 +28,7 @@
 
             <div class="d-flex align-items-end gap-2 w-100 p-1">
                 <div class="flex-grow-1 bg-white rounded-pill shadow-sm d-flex align-items-center px-2 py-1 border">
-                    <button class="btn btn-link text-muted p-1 border-0 shadow-none" type="button">
+                    <button id="btnEmoji" class="btn btn-link text-muted p-1 border-0 shadow-none" type="button" onclick="window.abrirSelectorEmojis(this)">
                         <i class="bi bi-emoji-smile" style="font-size: 1.3rem;"></i>
                     </button>
                     <input type="text" id="chatInput" 
@@ -53,6 +51,11 @@
                     <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 1.2rem;"></i>
                 </button>
             </div>`;
+
+            // CAMBIO ACÁ: Se ejecuta con retraso para garantizar que el DOM del footer ya exista en el navegador
+            setTimeout(() => {
+                window.inicializarSelectorEmojis();
+            }, 50);
 
             const newInput = document.getElementById("chatInput");
             newInput?.addEventListener("keypress", (e) => {
@@ -118,13 +121,11 @@
 
         if (!user || !pass) return;
 
-        // Preparamos los parámetros de forma segura para el controlador
         const formData = new FormData();
         formData.append("userName", user);
         formData.append("password", pass);
 
         try {
-            // Hacemos la validación directa contra nuestro servidor y SQLite
             const res = await fetch('/Chat/SetSessionUser', {
                 method: 'POST',
                 body: formData
@@ -133,7 +134,6 @@
 
             if (data.success) {
                 if (errorEl) errorEl.style.display = "none";
-                // Levantamos el rol real que nos devuelve el servidor o por defecto "User"
                 setupUserSession(user, data.role || "User");
             } else {
                 if (errorEl) {
@@ -171,12 +171,80 @@
     });
 
     async function logoutUser() {
+        if (!localStorage.getItem("chatUser")) return;
         localStorage.removeItem("chatUser");
         localStorage.removeItem("chatRole");
+        document.body.style.cursor = 'wait';
         try {
             await fetch('/Chat/Logout', { method: 'POST' });
-        } catch (err) { console.error(err); }
-        document.body.style.cursor = 'wait';
-        window.location.reload();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            window.location.reload();
+        }
     }
+
+    // Instancia global para que no se duplique
+    let emojiPickerInstance = null;
+    window.inicializarSelectorEmojis = function () {
+        const chatModalEl = document.getElementById("chatModal");
+        const input = document.getElementById('chatInput');
+
+        // Verificación del input y del constructor global de la librería
+        if (!input || typeof EmojiButton === 'undefined') return;
+
+        emojiPickerInstance = new EmojiButton({
+            position: 'top-start',
+            rootElement: chatModalEl,
+            autoHide: true,
+            i18n: {
+                search: 'Buscar emoji',
+                categories: {
+                    recents: 'Recientes',
+                    smileys: 'Emoticonos y personas',
+                    animals: 'Animales y naturaleza',
+                    food: 'Comida y bebida',
+                    activities: 'Actividades',
+                    travel: 'Viajes y lugares',
+                    objects: 'Objetos',
+                    symbols: 'Símbolos',
+                    flags: 'Banderas'
+                }
+            }
+        });
+
+        // Evento que se dispara al seleccionar un emoji
+        emojiPickerInstance.on('emoji', selection => {
+            const currentInput = document.getElementById('chatInput');
+            if (currentInput) {
+                // CORRECCIÓN: Si 'selection' es un objeto usa su propiedad .emoji, 
+                // de lo contrario, lo toma como el string directo (comportamiento de v3).
+                const emojiFinal = (typeof selection === 'object' && selection.emoji) ? selection.emoji : selection;
+
+                currentInput.value += emojiFinal;
+                currentInput.focus();
+
+                // Cambiar el ícono del botón de enviar (micrófono -> avión)
+                if (typeof window.toggleSendIcon === 'function') {
+                    window.toggleSendIcon();
+                } else if (typeof toggleSendIcon === 'function') {
+                    toggleSendIcon();
+                }
+            }
+        });
+    };
+
+    // Esta función se ejecuta directo al hacer click en la carita bi-emoji-smile
+    window.abrirSelectorEmojis = function (buttonElement) {
+        if (!emojiPickerInstance) {
+            window.inicializarSelectorEmojis();
+        }
+
+        if (emojiPickerInstance) {
+            emojiPickerInstance.togglePicker(buttonElement);
+        } else {
+            console.error("La librería EmojiButton aún no ha cargado desde el CDN.");
+        }
+    };
+
 })();

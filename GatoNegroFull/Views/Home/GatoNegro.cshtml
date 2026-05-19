@@ -51,7 +51,7 @@
             PuedeEditar = puedeEditar,
             PuedeVer = puedeVer,
             Images = arrayImagenes,
-            ImageFolder = "" 
+            ImageFolder = ""
         };
     }
 
@@ -68,7 +68,9 @@
     <partial name="Sections/_Gallery" />
     <partial name="Sections/_Services" />
 
-    @{ ViewBag.PuedeEditar = puedeEditar; }
+    @{
+        ViewBag.PuedeEditar = puedeEditar;
+    }
     <partial name="Sections/_TestimonialsCarousel" model="Model" />
     <partial name="Sections/_Contact" />
 
@@ -76,25 +78,21 @@
     <partial name="Modals/_ImageModal" />
 </div>
 
-<!-- Contenedor de Botones Flotantes -->
 <div class="contenedor-flotante-chat" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
     <div class="d-flex flex-row align-items-center gap-3">
 
-        <!-- Botón de Registro (Alta) corregido -->
         <div id="btnRegister" class="btn-chat-flotante" title="Darse de alta" style="cursor: pointer;" onclick="showAddUserModal()">
             <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 60px; height: 60px;">
                 <i class="bi bi-person-plus" style="font-size: 28px;"></i>
             </div>
         </div>
 
-        <!-- Botón de Login (Perfil) -->
         <div id="btnLogin" class="btn-chat-flotante" title="Ingresar" style="cursor: pointer;">
             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 60px; height: 60px;">
                 <i class="bi bi-person" style="font-size: 28px;"></i>
             </div>
         </div>
 
-        <!-- Botón de Chat (WhatsApp) -->
         <div id="btnChat" class="btn-chat-flotante" title="Abrir Chat" style="cursor: pointer;">
             <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 60px; height: 60px;">
                 <i class="bi bi-whatsapp" style="font-size: 30px;"></i>
@@ -104,13 +102,10 @@
     </div>
 </div>
 
-<!-- Modal de Chat Estilo WhatsApp -->
 <div class="modal fade" id="chatModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
-        @* Altura fija del 80% de la pantalla para mantener la estética de app móvil *@
         <div class="modal-content border-0 shadow" style="border-radius: 15px; overflow: hidden; height: 80vh;">
 
-            <!-- Header Fijo -->
             <div class="modal-header bg-success text-white border-0 flex-shrink-0 p-3">
                 <h6 class="modal-title d-flex align-items-center m-0">
                     <i class="bi bi-person-circle me-2"></i> CHAT GRUPAL
@@ -118,13 +113,11 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <!-- Cuerpo del Chat con Scroll -->
             <div class="modal-body p-0 d-flex flex-column overflow-auto"
                  id="chatContainer"
                  style="background-color: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); flex-grow: 1;">
 
                 <div id="chatMessages" class="py-3 px-3">
-                    <!-- Los mensajes se inyectan dinámicamente mediante JS -->
                 </div>
             </div>
 
@@ -238,58 +231,24 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script>
-        // CORRECCIÓN: Usamos la sesión de C# para setear esto inicialmente si existe
-        let CURRENT_USER = "@(userNameSession ?? "Visitante")";
-        
-        // Si C# dice que no está logueado, forzamos Visitante en localStorage
-        @if (estaLogueado)
-        {
-                @* Contenedor principal para alinear los dos elementos *@
-                <div class="d-flex align-items-end gap-2 w-100 p-1">
+        // Seteo limpio de variables globales requeridas por el chat
+        window.CURRENT_USER = "@(userNameSession ?? "Visitante")";
+        window.estaLogueado = @(estaLogueado ? "true" : "false");
 
-                    @* 1. El "Globo" Blanco del Input *@
-                    <div class="flex-grow-1 bg-white rounded-pill shadow-sm d-flex align-items-center px-2 py-1 border">
-                        @* Botón Emojis (opcional, pero da el look) *@
-                        <button class="btn btn-link text-muted p-1 border-0">
-                            <i class="bi bi-emoji-smile" style="font-size: 1.3rem;"></i>
-                        </button>
-
-                        <input type="text" id="chatInput"
-                               class="form-control border-0 shadow-none bg-transparent ps-2"
-                               placeholder="Escribe un mensaje..."
-                               style="font-size: 1rem;"
-                               oninput="toggleSendIcon()">
-
-                        @* Botón Clip *@
-                        <button class="btn btn-link text-muted p-1 border-0" onclick="document.getElementById('chatFile').click()">
-                            <i class="bi bi-paperclip" style="font-size: 1.3rem; transform: rotate(45deg);"></i>
-                        </button>
-                        <input type="file" id="chatFile" style="display:none" accept="image/*" onchange="window.sendImage(this)">
-                    </div>
-
-                    @* 2. El Botón Circular de Enviar/Micro *@
-                    <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                            id="btnSend" type="button"
-                            style="width: 48px; height: 48px; min-width: 48px;"
-                            onclick="handleSendMessage()">
-                        <i id="sendIcon" class="bi bi-mic-fill" style="font-size: 1.2rem;"></i>
-                    </button>
-                </div>
-        }
-
-        // Función para cancelar la edición o respuesta (Solo si existe el elemento)
         function cancelReply() {
             const preview = document.getElementById('replyPreview');
-            if(!preview) return; // No existe en modo solo lectura
+            if (!preview) return;
 
             preview.style.display = 'none';
-            document.getElementById('chatInput').value = '';
-            document.getElementById('sendIcon').className = 'bi bi-send-fill';
-            
-            if(typeof editingMsgId !== 'undefined') editingMsgId = null;
-            if(typeof replyingToId !== 'undefined') replyingToId = null;
+            const input = document.getElementById('chatInput');
+            if (input) input.value = '';
+
+            const icon = document.getElementById('sendIcon');
+            if (icon) icon.className = 'bi bi-mic-fill';
+
+            if (typeof editingMsgId !== 'undefined') editingMsgId = null;
+            if (typeof replyingToId !== 'undefined') replyingToId = null;
         }
     </script>
 }

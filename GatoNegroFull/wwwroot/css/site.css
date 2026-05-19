@@ -648,3 +648,12 @@ audio {
     width: 35px;
     pointer-events: none;
 }
+
+/* Forzar que el selector de emojis flote siempre por encima de cualquier capa de modal de Bootstrap */
+.emoji-picker,
+[data-emoji-picker] {
+    z-index: 9999 !important;
+    position: fixed !important;
+    box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 10px !important;
+}
