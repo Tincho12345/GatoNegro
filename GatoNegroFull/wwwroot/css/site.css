@@ -1,30 +1,54 @@
 ﻿/* =====================================================
-   1. BASE GLOBAL & RESET
+   1. BASE GLOBAL & RESET (Viewport, Tipografía y Fondo)
    ===================================================== */
 html {
     font-size: 14px;
     position: relative;
-    min-height: 100%;
     scroll-behavior: smooth;
 }
 
+/* Escalado de tipografía responsivo */
 @media (min-width: 768px) {
     html {
         font-size: 16px;
     }
 }
 
-html, body {
-    background: none;
+/* Forzamos a que el body tenga la imagen y no sea tapado por frameworks */
+body, body.scrolled {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh !important;
+    background-image: url('/images/Whatsapp.avif') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
 }
 
-    /* =====================================================
+/* Limpiamos contenedores intermedios de plantillas */
+main.main, .galeria-gato-negro, .hero-content {
+    background: transparent !important;
+}
+
+/* Helpers de Texto */
+.text-red {
+    color: red;
+    font-weight: bold;
+}
+
+.text-black {
+    color: black;
+    font-weight: bold;
+}
+
+/* =====================================================
    2. DARK THEME (Consolidado)
    ===================================================== */
-    body.dark-theme {
-        background-color: #121212;
-        color: #e0e0e0;
-    }
+body.dark-theme {
+    background-color: #121212;
+    color: #e0e0e0;
+}
 
 .dark-theme .navbar,
 .dark-theme .modal-content,
@@ -33,13 +57,27 @@ html, body {
 }
 
 /* =====================================================
-   3. MODALES
+   3. MODALES & VENTANAS EMERGENTES
    ===================================================== */
+.modal-backdrop.show {
+    backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
 .modal-lightblue .modal-content,
 #createEditModal .modal-content {
     background-color: lightblue;
     border-radius: 25px;
     border: none;
+}
+
+.modal-glass {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
 #createEditModal .modal-header {
@@ -53,6 +91,23 @@ html, body {
 #createEditModal .btn-close {
     filter: invert(1);
 }
+
+#modalImage {
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    object-fit: contain;
+}
+
+#modalClose {
+    z-index: 10;
+    transition: transform 0.2s;
+    text-shadow: 0 0 10px rgba(0,0,0,1);
+}
+
+    #modalClose:hover {
+        transform: scale(1.2);
+        color: #c85716 !important;
+    }
 
 .custom-scroll-body {
     max-height: 65vh;
@@ -73,8 +128,7 @@ html, body {
     min-width: 1100px;
 }
 
-    #tblList th,
-    #tblList td {
+    #tblList th, #tblList td {
         white-space: normal !important;
         vertical-align: top !important;
     }
@@ -112,7 +166,7 @@ div.dataTables_filter {
 }
 
 /* =====================================================
-   5. BOTONES & ICONOS
+   5. BOTONES, ICONOS & EFECTOS SWAL
    ===================================================== */
 .btn {
     border-radius: 25px;
@@ -146,6 +200,26 @@ i:hover {
 
 i[aria-hidden="true"] {
     pointer-events: none;
+}
+
+.swal2-confirm, .swal2-cancel {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.3s ease !important;
+}
+
+    .swal2-confirm:hover, .swal2-cancel:hover {
+        transform: scale(1.05);
+    }
+
+.swal-button-glow {
+    background: radial-gradient( circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.35) 0%, transparent 70% ) !important;
+}
+
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+    display: none;
 }
 
 /* =====================================================
@@ -199,98 +273,123 @@ i[aria-hidden="true"] {
 }
 
 /* =====================================================
-   7. GALERÍA GATO NEGRO (GLASS EFFECT)
+   7. SISTEMA DE FILAS Y GLASS CARDS (UNIFICADO)
    ===================================================== */
-.galeria-gato-negro {
-    min-height: 100vh;
-    background: linear-gradient(rgba(0,0,0,.15), rgba(0,0,0,.15)), url('/images/GatoNegro/fondo.webp') center / cover no-repeat fixed;
-    color: #fff;
+.row.justify-content-center {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch; /* Mismo alto para todas las columnas de la fila */
 }
 
-    /* Base Glass Cards */
+.col-md-4.col-lg-3.d-flex {
+    display: flex !important;
+}
 
-    .galeria-gato-negro .glass-card,
-    .galeria-gato-negro .hero-glass-card,
-    .galeria-gato-negro .carousel-control-prev-icon,
-    .galeria-gato-negro .carousel-control-next-icon {
-        background: rgba(255,255,255,.15);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(255,255,255,.25);
-        box-shadow: 0 10px 30px rgba(0,0,0,.25);
-        border-radius: 18px;
-        width: 100%;
-        min-height: 320px;
-        padding: 10px;
-        transition: transform .35s ease, box-shadow .35s ease, background .35s ease, opacity .35s ease;
+/* Tarjetas Vidrio Base */
+.glass-card, .hero-glass-card {
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.35) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+    padding: 1.5rem !important;
+    transition: transform .35s ease, box-shadow .35s ease, background .35s ease;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%; /* Sincroniza con el stretch de la fila */
+}
+
+    /* Hovers de tarjetas */
+    .glass-card:hover, .hero-glass-card:hover {
+        transform: translateY(-10px) scale(1.01);
+        background: rgba(0, 0, 0, 0.45) !important;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
     }
 
-    /* Hovers Unificados de Tarjetas */
-    .galeria-gato-negro .glass-card,
-    .glass-cards-section .glass-card {
-        transition: transform .35s ease, box-shadow .35s ease, background .35s ease, opacity .35s ease;
-    }
-
-        .galeria-gato-negro .glass-card:hover,
-        .glass-cards-section .glass-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0,0,0,.35);
-            background: rgba(255,255,255,.22);
+        .glass-card:hover i {
+            transform: scale(1.15) rotate(-5deg);
         }
 
-            .glass-cards-section .glass-card:hover i {
-                transform: scale(1.15) rotate(-5deg);
-            }
+/* Contenedor del cuerpo interno */
+.glass-card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
 
-    /* =====================================================
+    /* Empuja los botones de reserva simétricamente al fondo */
+    .glass-card-body .hero-buttons {
+        margin-top: auto !important;
+        padding-top: 15px;
+    }
+
+/* Forzar tarjeta cabecera/hero a ser compacta */
+.hero-glass-card {
+    height: auto !important;
+    min-height: unset !important;
+}
+
+.img-wrapper img {
+    object-fit: cover;
+    width: 100%;
+}
+
+/* =====================================================
    8. CAROUSEL & ELEMENTOS INTERNOS
    ===================================================== */
-    .galeria-gato-negro .carousel-item {
-        height: 550px;
+.galeria-gato-negro .carousel-item {
+    height: 550px;
+}
+
+.galeria-gato-negro .img-wrapper {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.galeria-gato-negro .carousel-item img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.galeria-gato-negro .carousel-control-prev-icon,
+.galeria-gato-negro .carousel-control-next-icon {
+    width: 50px;
+    height: 50px;
+    position: relative;
+    background: rgba(255,255,255,.15);
+    backdrop-filter: blur(14px);
+    border-radius: 18px;
+}
+
+    .galeria-gato-negro .carousel-control-prev-icon::after,
+    .galeria-gato-negro .carousel-control-next-icon::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 12px;
+        height: 12px;
+        border: solid #fff;
+        border-width: 0 3px 3px 0;
     }
 
-    .galeria-gato-negro .img-wrapper {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
+    .galeria-gato-negro .carousel-control-prev-icon::after {
+        transform: translate(-50%, -50%) rotate(135deg);
     }
 
-    .galeria-gato-negro .carousel-item img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
+    .galeria-gato-negro .carousel-control-next-icon::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
     }
 
-    .galeria-gato-negro .carousel-control-prev-icon,
-    .galeria-gato-negro .carousel-control-next-icon {
-        width: 50px;
-        height: 50px;
-        position: relative;
-    }
-
-        .galeria-gato-negro .carousel-control-prev-icon::after,
-        .galeria-gato-negro .carousel-control-next-icon::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 12px;
-            height: 12px;
-            border: solid #fff;
-            border-width: 0 3px 3px 0;
-        }
-
-        .galeria-gato-negro .carousel-control-prev-icon::after {
-            transform: translate(-50%, -50%) rotate(135deg);
-        }
-
-        .galeria-gato-negro .carousel-control-next-icon::after {
-            transform: translate(-50%, -50%) rotate(-45deg);
-        }
-
-/* Testimonios */
 .testimonial-avatar {
     width: 100px;
     height: 100px;
@@ -304,9 +403,7 @@ i[aria-hidden="true"] {
         transform: scale(1.06);
     }
 
-/* =====================================================
-   9. BOTONES ESPECIALES (RESERVA)
-   ===================================================== */
+/* Botón Especial de Reserva */
 .btn-reserva {
     color: #fff;
     border: 1px solid rgba(255,255,255,0.6);
@@ -325,296 +422,58 @@ i[aria-hidden="true"] {
     }
 
 /* =====================================================
-   10. SISTEMA DE ELIMINACIÓN (ANIMACIÓN)
+   9. SISTEMA DE CHAT (MENÚS & CAPAS CORREGIDAS)
    ===================================================== */
-.row {
-    transition: all 0.5s ease-in-out;
+#chatMessages, .chat-messages-container, #chatModal .modal-body {
+    isolation: isolate !important;
+    position: relative !important;
 }
 
-.item-eliminando {
-    opacity: 0 !important;
-    transform: scale(0.5) translateY(-40px) !important;
-    max-width: 0 !important;
-    flex-basis: 0 !important;
-    min-width: 0 !important;
-    width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    overflow: hidden !important;
-    pointer-events: none;
-    transition: opacity 0.4s ease, transform 0.4s ease, max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), flex-basis 0.5s cubic-bezier(0.4, 0, 0.2, 1), width 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin 0.5s ease, padding 0.5s ease !important;
-}
-
-/* Helpers de Texto */
-.text-red {
-    color: red;
-    font-weight: bold;
-}
-
-.text-black {
-    color: black;
-    font-weight: bold;
-}
-
-/* Obligamos a la tarjeta a ser compacta */
-.hero-glass-card {
-    height: auto !important; /* Que no use alturas heredadas */
-    min-height: unset !important; /* Quitamos cualquier alto mínimo previo */
-    display: inline-block; /* Opcional: hace que el ancho también se ajuste al texto */
-    width: 100%; /* Mantenemos el ancho del contenedor */
-    padding: 20px !important; /* Reducimos el padding si es necesario */
-}
-
-/* 1. Contenedor principal del Footer: Totalmente transparente */
-#footer.footer {
-    background: transparent !important;
-    --background-color: transparent !important;
-    --surface-color: transparent !important;
-}
-
-/* 2. Tarjetas Superiores: Efecto Glass resaltado */
-#footer .hero-glass-card {
-    background: rgba(255, 255, 255, 0.1) !important; /* Blanco muy tenue */
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-    border-radius: 18px !important;
-    padding: 25px !important;
-    height: 100% !important; /* Para que todas midan lo mismo */
-}
-
-/* 3. Franja Inferior (Copyright): Glass semioscuro */
-.footer-glass {
-    background: rgba(0, 0, 0, 0.4) !important; /* Negro tenue */
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-    margin-top: 50px !important;
-}
-
-
-/* 4. Ajustes de texto para legibilidad sobre el vidrio */
-#footer h4 {
-    color: #ffffff !important;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
-
-#footer p, #footer small {
-    color: rgba(255, 255, 255, 0.8) !important;
-}
-
-/* Iconos de redes sociales */
-.social-links a i {
-    font-size: 1.5rem;
-    color: white !important;
-    transition: transform 0.3s ease;
-}
-
-.social-links a:hover i {
-    transform: translateY(-3px);
-    color: #007bff !important; /* O el color de tu marca */
-}
-
-/* ============================================================
-   CONTENEDOR DE FILA
-   ============================================================ */
-.row.justify-content-center {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: stretch; /* Obliga a que los hijos (columnas) tengan el mismo alto */
-}
-
-/* Forzamos que las columnas de Bootstrap se comporten como flexboxes */
-.col-md-4.col-lg-3.d-flex {
-    display: flex !important;
-}
-
-/* ============================================================
-   GLASS CARD (Unificada)
-   ============================================================ */
-.glass-card {
-    cursor: pointer;
-    background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-    padding: 1.5rem; /* Ajustado para que no sea tan gigante en fotos */
-    transition: all 0.35s ease;
-    display: flex;
-    flex-direction: column;
-    width: 100%; /* Mismo ancho para todas (el de la columna) */
-    height: 100%; /* Alto variable pero IGUAL entre compañeras de fila */
-}
-
-    .glass-card:hover {
-        transform: translateY(-10px);
-        background: rgba(0, 0, 0, 0.45);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-    }
-
-.glass-card-body {
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Para que el mt-auto funcione */
-    width: 100%;
-}
-
-/* Para que las imágenes no deformen la tarjeta */
-.img-wrapper img {
-    object-fit: cover;
-    width: 100%;
-}
-
-
-/* Fondo del modal (la capa que oscurece la web) */
-/* Fondo del modal (la capa que oscurece la web) */
-/* Fondo del modal (la capa que oscurece la web) */
-.modal-backdrop.show {
-    backdrop-filter: blur(8px);
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-/* El contenedor del contenido */
-.modal-glass {
-    background: rgba(255, 255, 255, 0.1) !important; /* Blanco muy transparente */
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 20px !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-}
-
-/* Ajuste para la imagen dentro del modal */
-#modalImage {
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    object-fit: contain;
-}
-
-/* Botón cerrar flotante */
-#modalClose {
-    z-index: 10;
-    transition: transform 0.2s;
-    text-shadow: 0 0 10px rgba(0,0,0,1);
-}
-
-    #modalClose:hover {
-        transform: scale(1.2);
-        color: #c85716 !important; /* Tu color de acento */
-    }
-
-/* Estilo para los videos en el chat */
-.video-wrapper {
-    background-color: #000;
-    position: relative;
-    min-height: 150px;
-}
-
-    .video-wrapper video {
-        outline: none;
-    }
-
-    /* Spinner suave antes de que el video cargue (opcional) */
-    .video-wrapper::before {
-        content: "Cargando video...";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #555;
-        font-size: 0.8rem;
-    }
-
-/* 1. Limpieza de inputs nativos */
-input[type="search"]::-webkit-search-decoration,
-input[type="search"]::-webkit-search-results-button,
-input[type="search"]::-webkit-search-results-decoration {
-    display: none;
-}
-
-/* 2. Estructura base de botones Swal */
-.swal2-confirm, .swal2-cancel {
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s ease, background 0.3s ease !important;
-}
-
-    .swal2-confirm:hover, .swal2-cancel:hover {
-        transform: scale(1.05);
-    }
-
-/* 3. El efecto linterna (Glow) */
-.swal-button-glow {
-    /* El !important asegura que pise el color sólido de SweetAlert */
-    background: radial-gradient( circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.35) 0%, transparent 70% ) !important;
-}
-
-/* =====================================================
-   11. SISTEMA DE CHAT (CORREGIDO)
-   ===================================================== */
-
-/* Contenedor principal de mensajes */
 #chatMessages {
     padding: 10px;
     overflow-y: auto;
-    /* CRÍTICO: Permite que el dropdown sobresalga lateralmente */
     overflow-x: visible !important;
 }
 
-/* Burbuja de mensaje - Base */
 .message-wrapper {
     position: relative;
-    z-index: 1; /* Valor inicial bajo */
+    z-index: 1;
     transition: transform 0.1s ease-out;
     touch-action: pan-y;
     will-change: transform;
     max-width: 80%;
 }
 
-    /* ELEVACIÓN DE CAPA: Si el menú está abierto, subimos la burbuja por encima de las demás */
     .message-wrapper:has(.dropdown-menu.show) {
         z-index: 9999 !important;
     }
 
-    /* El globo del mensaje (el recuadro con color) */
     .message-wrapper > div {
         position: relative;
-        /* CRÍTICO: Evita que el borde redondeado o el fondo corten el menú */
         overflow: visible !important;
         border-radius: 12px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
-    /* Ajustes específicos para el Dropdown del Chat */
     .message-wrapper .dropdown-menu {
         position: absolute !important;
         z-index: 10000 !important;
         margin: 0;
         border: none !important;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-        background-color: #ffffff !important; /* Forzamos blanco para legibilidad */
+        background-color: #ffffff !important;
     }
 
-/* Tema oscuro para el menú del chat */
 body.dark-theme .message-wrapper .dropdown-menu {
     background-color: #2c2c2c !important;
     color: #e0e0e0 !important;
 }
-
-/* --- AUDIOS Y MULTIMEDIA --- */
 
 audio {
     border-radius: 20px;
     background-color: transparent;
 }
 
-/* Ajuste de ancho para audios */
 .message-wrapper:has(.audio-player-custom),
 .message-wrapper:has(audio) {
     min-width: 280px;
@@ -634,8 +493,6 @@ audio {
     text-overflow: ellipsis;
 }
 
-/* --- INDICADOR DE SLIDE (RESPONDER) --- */
-
 .swipe-reply-indicator {
     position: absolute;
     top: 50%;
@@ -649,9 +506,30 @@ audio {
     pointer-events: none;
 }
 
-/* Forzar que el selector de emojis flote siempre por encima de cualquier capa, burbuja o audio */
-.emoji-picker,
-[data-emoji-picker] {
+.video-wrapper {
+    background-color: #000;
+    position: relative;
+    min-height: 150px;
+}
+
+    .video-wrapper video {
+        outline: none;
+    }
+
+    .video-wrapper::before {
+        content: "Cargando video...";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #555;
+        font-size: 0.8rem;
+    }
+
+/* =====================================================
+   10. CORRECCIÓN EMOJI PICKER (PREVIEW COMPLETO)
+   ===================================================== */
+.emoji-picker, [data-emoji-picker] {
     z-index: 99999 !important;
     position: fixed !important;
     box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.3) !important;
@@ -659,42 +537,95 @@ audio {
     transform: translateY(-102%) translateX(5px) !important;
 }
 
-    /* CORRECCIÓN DEFINITIVA PARA LA CARITA DE PREVISUALIZACIÓN RECORTADA:
-   Forzamos a que la sección inferior de preview de la librería tenga altura automática,
-   visibilidad completa y desactive los límites rígidos que muerden el dibujo de la carita.
-*/
     .emoji-picker__preview,
     .emoji-picker__preview-container,
     [data-emoji-picker] [class*="preview"],
     [data-emoji-picker] [class*="footer"] {
         height: auto !important;
-        min-height: 55px !important; /* Asegura espacio suficiente para el emoji y el texto */
-        overflow: visible !important; /* Evita que el borde redondeado o un contenedor padre corte la carita */
+        min-height: 55px !important;
+        overflow: visible !important;
         padding-bottom: 6px !important;
         box-sizing: border-box !important;
     }
 
-    /* Ajuste específico para la imagen/emoji dentro de la previsualización inferior */
-    .emoji-picker__preview-emoji,
-    [data-emoji-picker] [class*="preview-emoji"] {
-        font-size: 2rem !important; /* Normaliza el tamaño del emoji para que no desborde */
+    .emoji-picker__preview-emoji, [data-emoji-picker] [class*="preview-emoji"] {
+        font-size: 2rem !important;
         line-height: 1 !important;
         display: flex !important;
         align-items: center !important;
     }
 
-    /* Si el problema es el contenedor de scroll de los emojis que se pisa con el footer,
-   le damos un respiro al final de la lista.
-*/
-    .emoji-picker__emojis,
-    [data-emoji-picker] .emoji-picker__container {
+    .emoji-picker__emojis, [data-emoji-picker] .emoji-picker__container {
         padding-bottom: 10px !important;
     }
 
-/* ¡ESTA REGLA EVITA QUE LAS BURBUJAS TAPEN EL PICKER! */
-#chatMessages,
-.chat-messages-container,
-#chatModal .modal-body {
-    isolation: isolate !important;
-    position: relative !important;
+/* =====================================================
+   11. FOOTER (GESTIÓN INTEGRAL)
+   ===================================================== */
+#footer.footer {
+    background: transparent !important;
+    --background-color: transparent !important;
+    --surface-color: transparent !important;
+}
+
+#footer .hero-glass-card {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 18px !important;
+    padding: 25px !important;
+    height: 100% !important;
+}
+
+.footer-glass {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    margin-top: 50px !important;
+}
+
+#footer h4 {
+    color: #ffffff !important;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+#footer p, #footer small {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.social-links a i {
+    font-size: 1.5rem;
+    color: white !important;
+    transition: transform 0.3s ease;
+}
+
+.social-links a:hover i {
+    transform: translateY(-3px);
+    color: #007bff !important;
+}
+
+/* =====================================================
+   12. ANIMACIONES DE ELIMINACIÓN DE ELEMENTOS
+   ===================================================== */
+.row {
+    transition: all 0.5s ease-in-out;
+}
+
+.item-eliminando {
+    opacity: 0 !important;
+    transform: scale(0.5) translateY(-40px) !important;
+    max-width: 0 !important;
+    flex-basis: 0 !important;
+    min-width: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease, max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), flex-basis 0.5s cubic-bezier(0.4, 0, 0.2, 1), width 0.5s cubic-bezier(0.4, 0, 0.2, 1), margin 0.5s ease, padding 0.5s ease !important;
 }

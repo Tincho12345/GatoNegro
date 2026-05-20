@@ -4,13 +4,14 @@
 # General Styling & Shared Classes
 --------------------------------------------------------------*/
 body {
-    /* Otras propiedades que ya tengas */
-    background-image: url('/image/GatoNetro/fondo.webp');
-    background-size: cover; /* Hace que la imagen cubra todo el fondo */
-    background-position: center; /* Centra la imagen */
-    background-repeat: no-repeat; /* Evita que se repita */
+    background-image: url('/images/Whatsapp.avif');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    margin: 0;
 }
-
 
 a {
   color: var(--accent-color);
@@ -4426,7 +4427,7 @@ section,
 .image-background {
     position: absolute;
     inset: 0;
-    background-image: url("/images/GatoNegro/fondo.webp");
+    background: none !important;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -4608,7 +4609,7 @@ section,
     }
 
 body.index-page {
-    background-image: url('/images/GatoNegro/fondo.webp'); /* ruta desde wwwroot */
+    background: none !important;
     background-size: cover; /* que cubra toda la pantalla */
     background-position: center; /* centrado */
     background-attachment: fixed; /* efecto parallax */
@@ -4650,7 +4651,7 @@ body.index-page {
 /* HERO CON IMAGEN DE FONDO */
 #hero {
     min-height: 100vh;
-    background-image: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.55)), url('/assets/images/GatoNegro/fondo.webp');
+    background: none !important;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -4661,7 +4662,7 @@ body.index-page {
 .hero.section {
     position: relative;
     min-height: 100vh;
-    background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('/images/GatoNegro/fondo.webp') !important;
+    background: none !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
@@ -4842,4 +4843,20 @@ body.index-page {
 #chatContainer::-webkit-scrollbar-thumb {
     background: rgba(0,0,0,0.2);
     border-radius: 10px;
+}
+
+/* Forzamos a que el body tenga la imagen y no sea tapado por frameworks */
+body.scrolled, body {
+    background-image: url('/images/Whatsapp.avif') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+    margin: 0;
+}
+
+/* Limpiamos contenedores intermedios que puedan tener fondos celestes o blancos sólidos */
+main.main, .galeria-gato-negro, .hero-content {
+    background: transparent !important;
 }
