@@ -233,7 +233,7 @@
 @section Scripts {
     <script>
         window.CURRENT_USER = "@(userNameSession ?? "Visitante")";
-        window.estaLogueado = @(estaLogueado ? "true" : "false");
+        window.estaLogueado = @(estaLogueado ? "true" : "false")
 
         function cancelReply() {
             const preview = document.getElementById('replyPreview');
